@@ -2,6 +2,12 @@
 
 End-to-end workflow for finding, qualifying, tailoring, validating, and applying to jobs using AI.
 
+## Supported Platforms
+
+Currently this project supports LinkedIn job listings only.
+
+The browser extension is designed to extract job information from LinkedIn pages and has not been tested with other job boards.
+
 ## Features
 
 * Capture job descriptions using a browser extension
@@ -150,11 +156,17 @@ The user remains responsible for reviewing all generated content and deciding wh
 
 ## Disclaimer
 
-This project does not automatically submit job applications.
+## Supported Platforms
+
+Currently this project supports LinkedIn job listings only.
+
+## Disclaimer
+
+This project is an independent tool and is not affiliated with, endorsed by, or sponsored by LinkedIn.
 
 The browser extension only reads information that is already present in loaded browser pages. It does not perform automated submissions, direct HTTP requests, or other automated interactions with external services.
 
-Users are solely responsible for ensuring that their use of this project complies with the terms of service, policies, and applicable laws governing any websites or services they access.
+Users are solely responsible for ensuring that their use of this project complies with applicable terms of service, policies, and laws.
 
 This software is provided "as is", without warranties of any kind. The authors and contributors are not responsible for account restrictions, account suspensions, data loss, employment outcomes, or any other damages arising from the use of this project.
 
