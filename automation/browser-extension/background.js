@@ -1,31 +1,81 @@
 const getJobData = () => {
 
-    const jobLink =
-        [...document.querySelectorAll('a[href*="/jobs/view/"]')]
-            .find(link =>
-                link.innerText.trim() &&
-                link.innerText.trim() !== 'Easy Apply'
-            );
+    // ── Job URL ───────────────────────────────────────────
+    // Both cases have /jobs/view/ links somewhere on the page
+    const jobViewLink = document.querySelector('a[href*="/jobs/view/"]');
+    const jobUrl = jobViewLink?.href || location.href;
 
-    const companyLink =
-        [...document.querySelectorAll('a[href*="/company/"]')]
-            .find(link => link.innerText.trim());
+    // Extract job ID from URL for deduplication
+    const jobId = jobUrl.match(/\/jobs\/view\/(\d+)/)?.[1] || '';
 
+    // ── Job Title ─────────────────────────────────────────
+    // Case 1: search results — link text inside h1
+    const h1Link = document.querySelector('h1 a[href*="/jobs/view/"]');
+    const titleFromH1 = h1Link?.innerText.trim();
+
+    // Case 2: detail panel — find the <p> that immediately precedes
+    // or contains a "Verified job" span, inside Primary content section
+    // Use the verified badge span as an anchor — it's semantic, not obfuscated
+    const verifiedBadge = document
+        .querySelector('[aria-label="Primary content"] [aria-label="Verified job"]');
+
+    // Walk up to the containing <p>, then grab only its text nodes
+    // (ignoring the badge span and any other child elements)
+    const titleFromVerifiedBadge = verifiedBadge
+        ? [...verifiedBadge.closest('p')?.childNodes || []]
+            .filter(n => n.nodeType === Node.TEXT_NODE)
+            .map(n => n.textContent.trim())
+            .find(t => t.length > 0)
+        : null;
+
+    // Case 2b: no verified badge — find the first meaningful <p>
+    // inside Primary content that isn't a location/metadata line
+    const titleFromPrimaryContent = (() => {
+        const section = document.querySelector('[aria-label="Primary content"]');
+        if (!section) return null;
+        // The title <p> is near the top, has substantial text, and
+        // isn't a company link or metadata span
+        for (const p of section.querySelectorAll('p')) {
+            const text = [...p.childNodes]
+                .filter(n => n.nodeType === Node.TEXT_NODE)
+                .map(n => n.textContent.trim())
+                .join('');
+            // Heuristic: title is >5 chars and doesn't look like metadata
+            if (text.length > 5 && !/^\d|ago$|applicants$/i.test(text)) {
+                return text;
+            }
+        }
+        return null;
+    })();
+
+    const jobTitle = titleFromH1
+                  || titleFromVerifiedBadge
+                  || titleFromPrimaryContent
+                  || document.title;
+
+    // ── Company ───────────────────────────────────────────
+    // Company link inside Primary content is more reliable than page-wide
+    const section = document.querySelector('[aria-label="Primary content"]');
+    const companyLink = section
+        ? [...section.querySelectorAll('a[href*="/company/"]')]
+              .find(a => a.innerText.trim())
+        : [...document.querySelectorAll('a[href*="/company/"]')]
+              .find(a => a.innerText.trim());
+
+    // ── Description ───────────────────────────────────────
     const jobDescription =
-        document
-            .querySelector('[data-sdui-component*="aboutTheJob"]')
-            ?.innerText?.trim()
-        ||
-        [...document.querySelectorAll('*')]
-            .find(el => el.innerText?.startsWith('About the job'))
-            ?.innerText?.trim()
+        document.querySelector('[data-sdui-component*="aboutTheJob"]')?.innerText?.trim()
+        || [...document.querySelectorAll('*')]
+               .find(el => el.innerText?.startsWith('About the job'))
+               ?.innerText?.trim()
         || '';
 
     return {
-        jobUrl:         jobLink?.href || '',
-        jobTitle:       jobLink?.innerText.trim() || '',
-        company:        companyLink?.innerText.trim() || '',
-        companyUrl:     companyLink?.href || '',
+        jobUrl,
+        jobId,
+        jobTitle,
+        company:    companyLink?.innerText.trim() || '',
+        companyUrl: companyLink?.href || '',
         jobDescription
     };
 };

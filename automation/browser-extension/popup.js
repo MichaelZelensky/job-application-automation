@@ -89,30 +89,65 @@ document.getElementById('buildPrompt').addEventListener('click', triggerBuildAnd
 
 // ── Capture Tabs ──────────────────────────────────────────
 const getJobDataFromPage = () => {
-    const jobLink =
-        [...document.querySelectorAll('a[href*="/jobs/view/"]')]
-            .find(link =>
-                link.innerText.trim() &&
-                link.innerText.trim() !== 'Easy Apply'
-            );
 
-    const companyLink =
-        [...document.querySelectorAll('a[href*="/company/"]')]
-            .find(link => link.innerText.trim());
+    // ── Job URL ───────────────────────────────────────────
+    const jobViewLink = document.querySelector('a[href*="/jobs/view/"]');
+    const jobUrl = jobViewLink?.href || location.href;
+    const jobId = jobUrl.match(/\/jobs\/view\/(\d+)/)?.[1] || '';
 
+    // ── Job Title ─────────────────────────────────────────
+    const h1Link = document.querySelector('h1 a[href*="/jobs/view/"]');
+    const titleFromH1 = h1Link?.innerText.trim();
+
+    const verifiedBadge = document
+        .querySelector('[aria-label="Primary content"] [aria-label="Verified job"]');
+
+    const titleFromVerifiedBadge = verifiedBadge
+        ? [...verifiedBadge.closest('p')?.childNodes || []]
+            .filter(n => n.nodeType === Node.TEXT_NODE)
+            .map(n => n.textContent.trim())
+            .find(t => t.length > 0)
+        : null;
+
+    const titleFromPrimaryContent = (() => {
+        const section = document.querySelector('[aria-label="Primary content"]');
+        if (!section) return null;
+        for (const p of section.querySelectorAll('p')) {
+            const text = [...p.childNodes]
+                .filter(n => n.nodeType === Node.TEXT_NODE)
+                .map(n => n.textContent.trim())
+                .join('');
+            if (text.length > 5 && !/^\d|ago$|applicants$/i.test(text)) {
+                return text;
+            }
+        }
+        return null;
+    })();
+
+    const title = titleFromH1
+               || titleFromVerifiedBadge
+               || titleFromPrimaryContent
+               || document.title;
+
+    // ── Company ───────────────────────────────────────────
+    const section = document.querySelector('[aria-label="Primary content"]');
+    const companyLink = section
+        ? [...section.querySelectorAll('a[href*="/company/"]')]
+              .find(a => a.innerText.trim())
+        : [...document.querySelectorAll('a[href*="/company/"]')]
+              .find(a => a.innerText.trim());
+
+    // ── Description ───────────────────────────────────────
     const jobDescription =
-        document
-            .querySelector('[data-sdui-component*="aboutTheJob"]')
-            ?.innerText?.trim()
-        ||
-        [...document.querySelectorAll('*')]
-            .find(el => el.innerText?.startsWith('About the job'))
-            ?.innerText?.trim()
+        document.querySelector('[data-sdui-component*="aboutTheJob"]')?.innerText?.trim()
+        || [...document.querySelectorAll('*')]
+               .find(el => el.innerText?.startsWith('About the job'))
+               ?.innerText?.trim()
         || '';
 
     return {
-        url:         jobLink?.href         || location.href,
-        title:       jobLink?.innerText.trim() || document.title,
+        url:         jobUrl,
+        title,
         company:     companyLink?.innerText.trim() || '',
         description: jobDescription
     };
@@ -122,13 +157,14 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
     setStatus(captureStatusEl, 'Scanning tabs…');
     capturedJsonEl.value = '';
 
-    const tabs = await chrome.tabs.query({ url: 'https://www.linkedin.com/jobs/*' });
+    const tabs = await chrome.tabs.query({ url: 'https://www.linkedin.com/*' });
 
     if (!tabs.length) {
         setStatus(captureStatusEl, 'No job tabs found.', true);
         return;
     }
 
+    const seen    = new Set();
     const results = [];
     const date    = new Date().toISOString().slice(0, 10);
 
@@ -138,6 +174,10 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
                 target: { tabId: tab.id },
                 func:   getJobDataFromPage
             });
+
+            const jobId = result.url.match(/\/jobs\/view\/(\d+)/)?.[1];
+            if (!jobId || seen.has(jobId)) continue;
+            seen.add(jobId);
 
             results.push({ date, url: result.url, title: result.title, company: result.company, description: result.description });
         } catch {
