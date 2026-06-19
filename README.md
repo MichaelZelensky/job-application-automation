@@ -23,19 +23,23 @@ The browser extension is designed to extract job information from LinkedIn pages
 
 ```text
 Job Listings
-      ↓
-Capture Jobs
-      ↓
+    ↓
+Validate / Filter
+    ↓
+Open selected jobs in separate tabs
+    ↓
+Capture tabs (browser extension)
+    ↓
 jobs.json
-      ↓
+    ↓
 Generate Tailor Prompts
-      ↓
+    ↓
 Tailor CVs with AI
-      ↓
+    ↓
 Generate PDFs
-      ↓
+    ↓
 Validate Fit
-      ↓
+    ↓
 Apply
 ```
 
@@ -44,7 +48,7 @@ Apply
 ```text
 .
 ├── automation/
-│   ├── job-qualify-browser-extension/
+│   ├── browser-extension/
 │   ├── scripts/
 │   └── readme.md
 ├── generic-cv/
@@ -74,7 +78,7 @@ cd job-application-automation
 5. Select:
 
 ```text
-automation/job-qualify-browser-extension
+automation/browser-extension
 ```
 
 ## Quick Start
