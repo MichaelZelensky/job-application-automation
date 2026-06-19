@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Job Qualification",
+  "version": "1.0",
+
+  "icons": {
+    "16":  "icon16.png",
+    "48":  "icon48.png",
+    "128": "icon128.png"
+  },
+
+  "permissions": [
+      "activeTab",
+      "scripting",
+      "storage",
+      "clipboardWrite",
+      "notifications",
+      "offscreen",
+      "tabs",
+      "downloads"
+  ],
+
+  "host_permissions": [
+    "https://www.linkedin.com/*"
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16":  "icon16.png",
+      "48":  "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+
+  "commands": {
+    "make-prompt": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Q"
+      },
+      "description": "Build qualification prompt"
+    }
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  }
+}

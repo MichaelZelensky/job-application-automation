@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Job Qualification</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:       #0A66C2;
+    --blue-dark:  #004182;
+    --blue-light: #EBF3FB;
+    --nav-w:      148px;
+    --text:       #1a1a1a;
+    --muted:      #666;
+    --border:     #dce6f0;
+    --success:    #057642;
+    --error:      #b91c1c;
+  }
+
+  html {
+    overflow: hidden;
+  }
+
+  body {
+    width: 800px;
+    height: 560px;
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    overflow: hidden;
+    background: #f3f6fa;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--blue);
+    color: white;
+    flex-shrink: 0;
+  }
+
+  header img {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+  }
+
+  header h1 {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  header span {
+    font-size: 11px;
+    opacity: 0.75;
+    margin-left: auto;
+  }
+
+  /* ── Layout ── */
+  .shell {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Nav ── */
+  nav {
+    width: var(--nav-w);
+    background: white;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0;
+    flex-shrink: 0;
+  }
+
+  nav button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 9px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: left;
+    border-left: 3px solid transparent;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  nav button:hover {
+    background: var(--blue-light);
+    color: var(--blue);
+  }
+
+  nav button.active {
+    color: var(--blue);
+    font-weight: 600;
+    border-left-color: var(--blue);
+    background: var(--blue-light);
+  }
+
+  nav button svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  nav button.active svg {
+    opacity: 1;
+  }
+
+  /* ── Panels ── */
+  .panels {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .panel {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .panel.active {
+    display: flex;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--blue-dark);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Qualification panel ── */
+  #status {
+    font-weight: 600;
+    font-size: 13px;
+    min-height: 18px;
+  }
+
+  #hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+    margin-bottom: 12px;
+  }
+
+  #cv-hint {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  textarea {
+    width: 100%;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11.5px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    resize: vertical;
+    background: white;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(10,102,194,0.12);
+  }
+
+  #promptTemplate { height: 160px; }
+  #cv             { height: 200px; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.12s, opacity 0.12s;
+  }
+
+  .btn-primary {
+    background: var(--blue);
+    color: white;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .btn-primary:hover { background: var(--blue-dark); }
+
+  .btn-secondary {
+    background: white;
+    color: var(--blue);
+    border: 1px solid var(--blue);
+  }
+
+  .btn-secondary:hover { background: var(--blue-light); }
+
+  .btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ── Capture panel ── */
+  #captureStatus {
+    font-weight: 600;
+    font-size: 13px;
+    min-height: 18px;
+    margin-bottom: 8px;
+  }
+
+  #capturedJson {
+    height: 300px;
+    font-size: 11px;
+  }
+
+  .capture-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  /* ── Help panel ── */
+  .help-body {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    line-height: 1.7;
+    color: var(--text);
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .help-body h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--blue-dark);
+    margin: 16px 0 6px;
+  }
+
+  .help-body h2:first-child { margin-top: 0; }
+
+  .help-body p  { margin-bottom: 8px; font-size: 12.5px; }
+  .help-body ul { padding-left: 18px; margin-bottom: 8px; }
+  .help-body li { font-size: 12.5px; margin-bottom: 3px; }
+
+  kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 11px;
+  }
+
+  .help-body code {
+    background: #f0f5ff;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 11.5px;
+    color: var(--blue-dark);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="icon48.png" alt="" />
+  <h1>Job Qualification</h1>
+  <span>Ctrl+Shift+Q anywhere</span>
+</header>
+
+<div class="shell">
+
+  <nav>
+    <button class="active" data-panel="qualification">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+        <line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/>
+      </svg>
+      Qualification
+    </button>
+    <button data-panel="capture">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      Capture Tabs
+    </button>
+    <button data-panel="help">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      Help
+    </button>
+  </nav>
+
+  <div class="panels">
+
+    <!-- Qualification -->
+    <div class="panel active" id="panel-qualification">
+      <button class="btn btn-primary" id="buildPrompt">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Build Prompt &amp; Copy
+      </button>
+
+      <div id="status"></div>
+      <div id="hint">Paste into ChatGPT, Claude, or any AI chat to evaluate the job.</div>
+
+      <label for="promptTemplate">Prompt Template</label>
+      <textarea id="promptTemplate" spellcheck="false" placeholder="TASK:
+Here's my CV and the job description.
+I can accept only real cash jobs. Priority to part-time, async jobs. More hands-on are welcome (also any low leadership roles).
+
+1. Rate fit (High/Medium/Low)
+2. Would you apply?
+3. Be very brief
+
+---
+
+{{JOB_DESCRIPTION}}
+
+---
+
+MY CV:
+
+{{CV}}
+"></textarea>
+
+      <label for="cv">Your CV</label>
+      <textarea id="cv" spellcheck="false" placeholder="Copy and paste your CV as text here."></textarea>
+    </div>
+
+    <!-- Capture Tabs -->
+    <div class="panel" id="panel-capture">
+      <div class="panel-title">Capture Open Tabs</div>
+      <div id="captureStatus">Scan all open job tabs and export as JSON.</div>
+
+      <button class="btn btn-primary" id="captureBtn" style="margin-bottom:12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        Scan Tabs
+      </button>
+
+      <label for="capturedJson">Result JSON</label>
+      <textarea id="capturedJson" spellcheck="false" readonly placeholder="Click Scan to populate…"></textarea>
+
+      <div class="capture-actions">
+        <button class="btn btn-secondary" id="copyJsonBtn">Copy JSON</button>
+        <button class="btn btn-secondary" id="downloadJsonBtn">Download JSON</button>
+      </div>
+    </div>
+
+    <!-- Help -->
+    <div class="panel" id="panel-help">
+      <div class="panel-title">Help</div>
+      <div class="help-body">
+
+        <h2>Qualification</h2>
+        <p>Opens on each job page. Press <kbd>Ctrl+Shift+Q</kbd> (or click <strong>Build Prompt &amp; Copy</strong>) to scrape the job and copy a ready-made AI prompt to your clipboard.</p>
+        <ul>
+          <li>Paste into <strong>ChatGPT</strong>, <strong>Claude</strong>, or any AI chat.</li>
+          <li>The AI rates fit (High / Medium / Low) and says whether to apply.</li>
+          <li>Edit the <em>Prompt Template</em> to change how the AI evaluates jobs.</li>
+          <li>Paste your CV once — it's saved and reused automatically.</li>
+        </ul>
+
+        <h2>Capture Tabs</h2>
+        <p>Scrapes all open job tabs and exports a JSON array:</p>
+        <code>[ { date, url, title, company, description }, … ]</code>
+        <p style="margin-top:8px">Use <strong>Copy JSON</strong> or <strong>Download JSON</strong> to save the result. Great for building a shortlist or tracking applications.</p>
+        <p style="margin-top:8px"><strong>⚠️ Before running Capture:</strong> every job tab must be fully loaded. Opening a link in a new tab is not enough — you need to click each tab so it gets focus and the page content fully renders. Check this manually before hitting Scan.</p>
+
+        <h2>Keyboard Shortcut</h2>
+        <p><kbd>Ctrl+Shift+Q</kbd> works even when the popup is closed — as long as a job tab is open.</p>
+        <p>To change the shortcut: go to <code>chrome://extensions/shortcuts</code>.</p>
+
+        <h2>Tips</h2>
+        <ul>
+          <li>The extension only reads tabs on <strong>linkedin.com</strong>.</li>
+          <li>Your CV and template are stored locally — nothing is sent anywhere.</li>
+          <li>If scraping returns empty fields, reload the job page and try again.</li>
+        </ul>
+
+      </div>
+    </div>
+
+  </div><!-- .panels -->
+</div><!-- .shell -->
+
+<script src="popup.js"></script>
+</body>
+</html>
