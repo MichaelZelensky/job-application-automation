@@ -81,7 +81,69 @@ cd job-application-automation
 automation/browser-extension
 ```
 
+## CV Setup (Required)
+
+The repository includes a base CV template:
+
+```
+generic-cv/Agent Smith CV.html
+```
+
+### 1. Create your personal CV file
+
+Rename the template using your real full name:
+
+```
+generic-cv/<Your Full Name> CV.html
+```
+
+Example:
+
+```
+generic-cv/John Silver CV.html
+```
+
+This file is the **primary CV source** used for all tailoring and generation.
+
+The repo already includes a default template named **Agent Smith CV.html**, but it must be replaced with your real identity-specific version before use.
+
+Note: `generic-cv/` directory can contain only one html file.
+
+---
+
+### 2. Profile photo
+
+Replace the default image:
+
+```
+generic-cv/html-assets/me.png
+```
+
+with your real profile photo.
+
+This image is automatically embedded into all generated CV variants.
+
+---
+
+### 3. Naming convention for generated CVs
+
+All script-generated tailored CVs will follow this structure:
+
+```
+applications/YYYY-MM-DD/cvs/<your_cv_filename> - <Company>.html
+applications/YYYY-MM-DD/cvs/<your_cv_filename> - <Company>.pdf
+```
+
+Example:
+
+```
+applications/YYYY-MM-DD/cvs/John Silver - Stripe.html
+applications/YYYY-MM-DD/cvs/John Silver - Stripe.pdf
+```
+
+
 ## Quick Start
+
 
 ### 1. Capture Jobs
 
