@@ -1,26 +1,16 @@
 const getJobData = () => {
 
     // ── Job URL ───────────────────────────────────────────
-    // Both cases have /jobs/view/ links somewhere on the page
     const jobViewLink = document.querySelector('a[href*="/jobs/view/"]');
     const jobUrl = jobViewLink?.href || location.href;
 
-    // Extract job ID from URL for deduplication
-    const jobId = jobUrl.match(/\/jobs\/view\/(\d+)/)?.[1] || '';
-
     // ── Job Title ─────────────────────────────────────────
-    // Case 1: search results — link text inside h1
     const h1Link = document.querySelector('h1 a[href*="/jobs/view/"]');
     const titleFromH1 = h1Link?.innerText.trim();
 
-    // Case 2: detail panel — find the <p> that immediately precedes
-    // or contains a "Verified job" span, inside Primary content section
-    // Use the verified badge span as an anchor — it's semantic, not obfuscated
     const verifiedBadge = document
         .querySelector('[aria-label="Primary content"] [aria-label="Verified job"]');
 
-    // Walk up to the containing <p>, then grab only its text nodes
-    // (ignoring the badge span and any other child elements)
     const titleFromVerifiedBadge = verifiedBadge
         ? [...verifiedBadge.closest('p')?.childNodes || []]
             .filter(n => n.nodeType === Node.TEXT_NODE)
@@ -28,19 +18,14 @@ const getJobData = () => {
             .find(t => t.length > 0)
         : null;
 
-    // Case 2b: no verified badge — find the first meaningful <p>
-    // inside Primary content that isn't a location/metadata line
     const titleFromPrimaryContent = (() => {
         const section = document.querySelector('[aria-label="Primary content"]');
         if (!section) return null;
-        // The title <p> is near the top, has substantial text, and
-        // isn't a company link or metadata span
         for (const p of section.querySelectorAll('p')) {
             const text = [...p.childNodes]
                 .filter(n => n.nodeType === Node.TEXT_NODE)
                 .map(n => n.textContent.trim())
                 .join('');
-            // Heuristic: title is >5 chars and doesn't look like metadata
             if (text.length > 5 && !/^\d|ago$|applicants$/i.test(text)) {
                 return text;
             }
@@ -54,7 +39,6 @@ const getJobData = () => {
                   || document.title;
 
     // ── Company ───────────────────────────────────────────
-    // Company link inside Primary content is more reliable than page-wide
     const section = document.querySelector('[aria-label="Primary content"]');
     const companyLink = section
         ? [...section.querySelectorAll('a[href*="/company/"]')]
@@ -72,7 +56,6 @@ const getJobData = () => {
 
     return {
         jobUrl,
-        jobId,
         jobTitle,
         company:    companyLink?.innerText.trim() || '',
         companyUrl: companyLink?.href || '',
@@ -135,24 +118,28 @@ ${job.jobDescription}
     return { jobTitle: job.jobTitle, company: job.company };
 };
 
-// Shortcut — no notification
+// ── Active LinkedIn tab ───────────────────────────────────
+const getLinkedInTab = async () => {
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (activeTab?.url?.includes('linkedin.com')) return activeTab;
+
+    const tabs = await chrome.tabs.query({ url: 'https://www.linkedin.com/*' });
+    return tabs[0] ?? null;
+};
+
+// ── Shortcut ──────────────────────────────────────────────
 chrome.commands.onCommand.addListener(async command => {
-
     if (command !== 'make-prompt') return;
-
-    const [tab] = await chrome.tabs.query({ url: 'https://www.linkedin.com/*' });
+    const tab = await getLinkedInTab();
     if (!tab) return;
-
     await buildAndCopy(tab.id).catch(console.error);
 });
 
-// Popup message — notify so popup status updates
+// ── Popup message ─────────────────────────────────────────
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-
     if (message.type !== 'BUILD_AND_COPY') return;
 
-    chrome.tabs.query({ url: 'https://www.linkedin.com/*' }).then(([tab]) => {
-
+    getLinkedInTab().then(tab => {
         if (!tab) {
             sendResponse({ error: 'No LinkedIn tab found' });
             return;
