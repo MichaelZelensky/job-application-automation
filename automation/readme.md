@@ -73,7 +73,7 @@ For each file in `tailor-prompts/`:
 
 ```bash
 cd automation/scripts
-./prompt-generator.sh ../../applications/2026-06-19
+./pdf-generator.sh ../../applications/2026-06-19
 ```
 
 This will create pdf files for each CV next to html files.
