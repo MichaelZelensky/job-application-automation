@@ -1,31 +1,48 @@
 const getJobData = () => {
 
-    const jobLink =
-        [...document.querySelectorAll('a[href*="/jobs/view/"]')]
-            .find(link =>
-                link.innerText.trim() &&
-                link.innerText.trim() !== 'Easy Apply'
-            );
+    const standaloneMatch = location.pathname.match(/\/jobs\/view\/(\d+)/);
+    const currentJobId =
+        standaloneMatch?.[1]
+        || new URLSearchParams(location.search).get('currentJobId');
 
-    const companyLink =
-        [...document.querySelectorAll('a[href*="/company/"]')]
-            .find(link => link.innerText.trim());
+    const matchedCard = currentJobId
+        ? [...document.querySelectorAll(`a[href*="/jobs/view/${currentJobId}"]`)]
+            .find(a => a.closest('.job-card-container, li'))
+        : null;
+
+    const [titlePart, companyPart] = document.title.split(' | ');
+
+    const jobTitle =
+        matchedCard?.querySelector('strong')?.innerText?.trim()
+        || matchedCard?.getAttribute('aria-label')?.replace(/ with verification$/i, '').trim()
+        || document.querySelector('.job-details-jobs-unified-top-card__job-title h1')?.innerText?.trim()
+        || titlePart?.trim()
+        || '';
+
+    const companyName =
+        document.querySelector('.job-details-jobs-unified-top-card__company-name')?.innerText?.trim()
+        || document.querySelector('a[href*="/company/"]')?.innerText?.trim()
+        || companyPart?.trim()
+        || '';
+
+    const companyUrl =
+        document.querySelector('.job-details-jobs-unified-top-card__company-name a')?.href
+        || document.querySelector('a[href*="/company/"]')?.href
+        || '';
 
     const jobDescription =
-        document
-            .querySelector('[data-sdui-component*="aboutTheJob"]')
-            ?.innerText?.trim()
-        ||
-        [...document.querySelectorAll('*')]
-            .find(el => el.innerText?.startsWith('About the job'))
-            ?.innerText?.trim()
+        document.querySelector('.jobs-box__html-content')?.innerText?.trim()
+        || document.querySelector('[data-sdui-component*="aboutTheJob"]')?.innerText?.trim()
+        || document.querySelector('.jobs-description')?.innerText?.trim()
         || '';
 
     return {
-        jobUrl:         jobLink?.href || '',
-        jobTitle:       jobLink?.innerText.trim() || '',
-        company:        companyLink?.innerText.trim() || '',
-        companyUrl:     companyLink?.href || '',
+        jobUrl:     currentJobId
+                        ? `https://www.linkedin.com/jobs/view/${currentJobId}/`
+                        : location.href.split('?')[0],
+        jobTitle,
+        company:    companyName,
+        companyUrl,
         jobDescription
     };
 };
@@ -90,7 +107,11 @@ chrome.commands.onCommand.addListener(async command => {
 
     if (command !== 'make-prompt') return;
 
-    const [tab] = await chrome.tabs.query({ url: 'https://www.linkedin.com/*' });
+    const [tab] = await chrome.tabs.query({
+        url:           'https://www.linkedin.com/*',
+        active:        true,
+        currentWindow: true
+    });
     if (!tab) return;
 
     await buildAndCopy(tab.id).catch(console.error);
@@ -101,10 +122,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     if (message.type !== 'BUILD_AND_COPY') return;
 
-    chrome.tabs.query({ url: 'https://www.linkedin.com/*' }).then(([tab]) => {
+    chrome.tabs.query({
+        url:           'https://www.linkedin.com/*',
+        active:        true,
+        currentWindow: true
+    }).then(([tab]) => {
 
         if (!tab) {
-            sendResponse({ error: 'No LinkedIn tab found' });
+            sendResponse({ error: 'No active LinkedIn tab found' });
             return;
         }
 
