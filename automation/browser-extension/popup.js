@@ -87,37 +87,56 @@ cvEl.addEventListener('input', saveState);
 
 document.getElementById('buildPrompt').addEventListener('click', triggerBuildAndCopy);
 
-// ── Capture Tabs ──────────────────────────────────────────
+// ── Capture: runs inside each tab ─────────────────────────
 const getJobDataFromPage = () => {
-    const jobLink =
-        [...document.querySelectorAll('a[href*="/jobs/view/"]')]
-            .find(link =>
-                link.innerText.trim() &&
-                link.innerText.trim() !== 'Easy Apply'
-            );
 
-    const companyLink =
-        [...document.querySelectorAll('a[href*="/company/"]')]
-            .find(link => link.innerText.trim());
+    const standaloneMatch = location.pathname.match(/\/jobs\/view\/(\d+)/);
+    const currentJobId =
+        standaloneMatch?.[1]
+        || new URLSearchParams(location.search).get('currentJobId');
+
+    if (!currentJobId) return null;
+
+    const matchedCard = [...document.querySelectorAll(`a[href*="/jobs/view/${currentJobId}"]`)]
+        .find(a => a.closest('.job-card-container, li'));
+
+    const [titlePart, companyPart] = document.title.split(' | ');
+
+    const jobTitle =
+        matchedCard?.querySelector('strong')?.innerText?.trim()
+        || matchedCard?.getAttribute('aria-label')?.replace(/ with verification$/i, '').trim()
+        || document.querySelector('.job-details-jobs-unified-top-card__job-title h1')?.innerText?.trim()
+        || titlePart?.trim()
+        || '';
+
+    const companyName =
+        document.querySelector('.job-details-jobs-unified-top-card__company-name')?.innerText?.trim()
+        || document.querySelector('a[href*="/company/"]')?.innerText?.trim()
+        || companyPart?.trim()
+        || '';
+
+    const companyUrl =
+        document.querySelector('.job-details-jobs-unified-top-card__company-name a')?.href
+        || document.querySelector('a[href*="/company/"]')?.href
+        || '';
 
     const jobDescription =
-        document
-            .querySelector('[data-sdui-component*="aboutTheJob"]')
-            ?.innerText?.trim()
-        ||
-        [...document.querySelectorAll('*')]
-            .find(el => el.innerText?.startsWith('About the job'))
-            ?.innerText?.trim()
+        document.querySelector('.jobs-box__html-content')?.innerText?.trim()
+        || document.querySelector('[data-sdui-component*="aboutTheJob"]')?.innerText?.trim()
+        || document.querySelector('.jobs-description')?.innerText?.trim()
         || '';
 
     return {
-        url:         jobLink?.href         || location.href,
-        title:       jobLink?.innerText.trim() || document.title,
-        company:     companyLink?.innerText.trim() || '',
+        jobId:       currentJobId,
+        url:         `https://www.linkedin.com/jobs/view/${currentJobId}/`,
+        title:       jobTitle,
+        company:     companyName,
+        companyUrl,
         description: jobDescription
     };
 };
 
+// ── Capture button ────────────────────────────────────────
 document.getElementById('captureBtn').addEventListener('click', async () => {
     setStatus(captureStatusEl, 'Scanning tabs…');
     capturedJsonEl.value = '';
@@ -129,6 +148,7 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
         return;
     }
 
+    const seen    = new Set();
     const results = [];
     const date    = new Date().toISOString().slice(0, 10);
 
@@ -139,7 +159,19 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
                 func:   getJobDataFromPage
             });
 
-            results.push({ date, url: result.url, title: result.title, company: result.company, description: result.description });
+            if (!result || !result.jobId) continue;
+            if (seen.has(result.jobId))   continue;
+
+            seen.add(result.jobId);
+            results.push({
+                date,
+                jobId:       result.jobId,
+                url:         result.url,
+                title:       result.title,
+                company:     result.company,
+                companyUrl:  result.companyUrl,
+                description: result.description
+            });
         } catch {
             // Tab may be restricted — skip it
         }
