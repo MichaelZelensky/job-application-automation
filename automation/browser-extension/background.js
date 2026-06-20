@@ -1,64 +1,31 @@
 const getJobData = () => {
 
-    // ── Job URL ───────────────────────────────────────────
-    const jobViewLink = document.querySelector('a[href*="/jobs/view/"]');
-    const jobUrl = jobViewLink?.href || location.href;
+    const jobLink =
+        [...document.querySelectorAll('a[href*="/jobs/view/"]')]
+            .find(link =>
+                link.innerText.trim() &&
+                link.innerText.trim() !== 'Easy Apply'
+            );
 
-    // ── Job Title ─────────────────────────────────────────
-    const h1Link = document.querySelector('h1 a[href*="/jobs/view/"]');
-    const titleFromH1 = h1Link?.innerText.trim();
+    const companyLink =
+        [...document.querySelectorAll('a[href*="/company/"]')]
+            .find(link => link.innerText.trim());
 
-    const verifiedBadge = document
-        .querySelector('[aria-label="Primary content"] [aria-label="Verified job"]');
-
-    const titleFromVerifiedBadge = verifiedBadge
-        ? [...verifiedBadge.closest('p')?.childNodes || []]
-            .filter(n => n.nodeType === Node.TEXT_NODE)
-            .map(n => n.textContent.trim())
-            .find(t => t.length > 0)
-        : null;
-
-    const titleFromPrimaryContent = (() => {
-        const section = document.querySelector('[aria-label="Primary content"]');
-        if (!section) return null;
-        for (const p of section.querySelectorAll('p')) {
-            const text = [...p.childNodes]
-                .filter(n => n.nodeType === Node.TEXT_NODE)
-                .map(n => n.textContent.trim())
-                .join('');
-            if (text.length > 5 && !/^\d|ago$|applicants$/i.test(text)) {
-                return text;
-            }
-        }
-        return null;
-    })();
-
-    const jobTitle = titleFromH1
-                  || titleFromVerifiedBadge
-                  || titleFromPrimaryContent
-                  || document.title;
-
-    // ── Company ───────────────────────────────────────────
-    const section = document.querySelector('[aria-label="Primary content"]');
-    const companyLink = section
-        ? [...section.querySelectorAll('a[href*="/company/"]')]
-              .find(a => a.innerText.trim())
-        : [...document.querySelectorAll('a[href*="/company/"]')]
-              .find(a => a.innerText.trim());
-
-    // ── Description ───────────────────────────────────────
     const jobDescription =
-        document.querySelector('[data-sdui-component*="aboutTheJob"]')?.innerText?.trim()
-        || [...document.querySelectorAll('*')]
-               .find(el => el.innerText?.startsWith('About the job'))
-               ?.innerText?.trim()
+        document
+            .querySelector('[data-sdui-component*="aboutTheJob"]')
+            ?.innerText?.trim()
+        ||
+        [...document.querySelectorAll('*')]
+            .find(el => el.innerText?.startsWith('About the job'))
+            ?.innerText?.trim()
         || '';
 
     return {
-        jobUrl,
-        jobTitle,
-        company:    companyLink?.innerText.trim() || '',
-        companyUrl: companyLink?.href || '',
+        jobUrl:         jobLink?.href || '',
+        jobTitle:       jobLink?.innerText.trim() || '',
+        company:        companyLink?.innerText.trim() || '',
+        companyUrl:     companyLink?.href || '',
         jobDescription
     };
 };
@@ -118,28 +85,24 @@ ${job.jobDescription}
     return { jobTitle: job.jobTitle, company: job.company };
 };
 
-// ── Active LinkedIn tab ───────────────────────────────────
-const getLinkedInTab = async () => {
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (activeTab?.url?.includes('linkedin.com')) return activeTab;
-
-    const tabs = await chrome.tabs.query({ url: 'https://www.linkedin.com/*' });
-    return tabs[0] ?? null;
-};
-
-// ── Shortcut ──────────────────────────────────────────────
+// Shortcut — no notification
 chrome.commands.onCommand.addListener(async command => {
+
     if (command !== 'make-prompt') return;
-    const tab = await getLinkedInTab();
+
+    const [tab] = await chrome.tabs.query({ url: 'https://www.linkedin.com/*' });
     if (!tab) return;
+
     await buildAndCopy(tab.id).catch(console.error);
 });
 
-// ── Popup message ─────────────────────────────────────────
+// Popup message — notify so popup status updates
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+
     if (message.type !== 'BUILD_AND_COPY') return;
 
-    getLinkedInTab().then(tab => {
+    chrome.tabs.query({ url: 'https://www.linkedin.com/*' }).then(([tab]) => {
+
         if (!tab) {
             sendResponse({ error: 'No LinkedIn tab found' });
             return;
