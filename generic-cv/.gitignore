@@ -1,0 +1,6 @@
+# generic-cv/.gitignore
+*
+!.gitignore
+!.Agent Smith CV.html
+!.html-assets/style.css
+!.html-assets/me.png
