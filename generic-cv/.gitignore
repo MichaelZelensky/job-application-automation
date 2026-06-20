@@ -2,5 +2,7 @@
 *
 !.gitignore
 !Agent Smith CV.html
+!html-assets/
+html-assets/*
 !html-assets/style.css
 !html-assets/me.png
