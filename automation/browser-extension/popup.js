@@ -1,6 +1,6 @@
 const DEFAULT_TEMPLATE = `TASK:
 Here's my CV and the job description.
-I can accept only real cash jobs. Priority to part-time, async jobs. More hands-on are welcome (also any low leadership roles).
+I can accept only real cash jobs.
 
 1. Rate fit (High/Medium/Low)
 2. Would you apply?
