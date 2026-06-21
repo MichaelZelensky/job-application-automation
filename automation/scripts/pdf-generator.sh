@@ -6,7 +6,7 @@
 # Reads jobs.json, combines each job description with the
 # generic CV, and generates:
 #   1. tailor-prompts/company-name.txt  — AI prompt to tailor CV
-#   2. cvs/Michael-Zelensky-CV-company-name.html — empty placeholder
+#   2. cvs/Agent Smith CV-company-name.html — empty placeholder
 #
 # Also copies generic-cv/html-assets/ into cvs/html-assets/ once.
 #
