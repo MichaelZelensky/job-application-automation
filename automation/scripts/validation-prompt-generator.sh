@@ -90,9 +90,6 @@ Flag any obvious gaps or mismatches.
 
 ---
 
-JOB URL:
-${url_val:-}
-
 JOB TITLE:
 ${title_val:-}
 

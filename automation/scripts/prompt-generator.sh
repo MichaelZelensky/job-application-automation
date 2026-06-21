@@ -91,9 +91,6 @@ Keep the same HTML structure and styles as the original.
 
 ---
 
-JOB URL:
-${url_val:-}
-
 JOB TITLE:
 ${title_val:-}
 
