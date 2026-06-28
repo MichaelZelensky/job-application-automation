@@ -1,12 +1,15 @@
-# Job Application Automation
+## Job Application Automation
 
 End-to-end workflow for finding, qualifying, tailoring, validating, and applying to jobs using AI.
 
 ## Supported Platforms
 
-Currently this project supports LinkedIn job listings only.
+Currently this project supports:
 
-The browser extension is designed to extract job information from LinkedIn pages and has not been tested with other job boards.
+* LinkedIn job listings
+* GoFractional job listings
+
+The browser extension is designed to extract job information from both LinkedIn and GoFractional pages. Other job boards have not been tested.
 
 ## Features
 
@@ -223,6 +226,7 @@ The user remains responsible for reviewing all generated content and deciding wh
 * `Agent Smith CV.html` is a placeholder and must be replaced.
 * Profile image `generic-cv/html-assets/me.png` must be replaced.
 * Generated CVs are always derived from the single source CV.
+* Supported platforms: LinkedIn + GoFractional.
 
 ## Disclaimer
 
