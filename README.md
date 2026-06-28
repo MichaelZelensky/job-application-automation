@@ -67,6 +67,8 @@ Apply
 ```bash
 git clone https://github.com/MichaelZelensky/job-application-automation.git
 cd job-application-automation
+chmod +x run
+chmod +x automation/scripts/*.sh
 ```
 
 ### Install the Browser Extension
@@ -107,8 +109,6 @@ This file is the **primary CV source** used for all tailoring and generation.
 
 The `generic-cv/` directory must contain exactly one HTML CV file.
 
----
-
 ### 2. Profile photo
 
 Replace the default image:
@@ -120,8 +120,6 @@ generic-cv/html-assets/me.png
 with your real profile photo.
 
 This image is automatically embedded into all generated CV variants.
-
----
 
 ### 3. Naming convention for generated CVs
 

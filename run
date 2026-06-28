@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CMD="${1:-}"
+
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS_DIR="$ROOT_DIR/automation/scripts"
+
+shift || true
+
+tailor() {
+  local batch_dir="${1:-}"
+  if [ -z "$batch_dir" ]; then
+    echo "Usage: run tailor applications/YYYY-MM-DD"
+    exit 1
+  fi
+
+  "$SCRIPTS_DIR/prompt-generator.sh" "$batch_dir"
+}
+
+validate() {
+  local batch_dir="${1:-}"
+  if [ -z "$batch_dir" ]; then
+    echo "Usage: run validate applications/YYYY-MM-DD"
+    exit 1
+  fi
+
+  "$SCRIPTS_DIR/validation-prompt-generator.sh" "$batch_dir"
+}
+
+pdf() {
+  local batch_dir="${1:-}"
+  if [ -z "$batch_dir" ]; then
+    echo "Usage: run pdf applications/YYYY-MM-DD"
+    exit 1
+  fi
+
+  "$SCRIPTS_DIR/pdf-generator.sh" "$batch_dir"
+}
+
+case "$CMD" in
+  tailor)
+    tailor "$@"
+    ;;
+  validate)
+    validate "$@"
+    ;;
+  pdf)
+    pdf "$@"
+    ;;
+  *)
+    echo "Unknown command: $CMD"
+    echo ""
+    echo "Usage:"
+    echo "  run tailor applications/YYYY-MM-DD"
+    echo "  run validate applications/YYYY-MM-DD"
+    echo "  run pdf applications/YYYY-MM-DD"
+    exit 1
+    ;;
+esac
