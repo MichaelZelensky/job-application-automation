@@ -141,7 +141,10 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
     setStatus(captureStatusEl, 'Scanning tabs…');
     capturedJsonEl.value = '';
 
-    const tabs = await chrome.tabs.query({ url: 'https://www.linkedin.com/jobs/*' });
+    const tabs = await chrome.tabs.query({
+        url: 'https://www.linkedin.com/jobs/*',
+        currentWindow: true
+    });
 
     if (!tabs.length) {
         setStatus(captureStatusEl, 'No job tabs found.', true);
