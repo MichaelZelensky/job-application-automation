@@ -14,18 +14,16 @@
 
 set -euo pipefail
 
-# ── Args ──────────────────────────────────────────────────────
 if [ $# -lt 1 ]; then
   echo "Usage: $0 <applications/YYYY-MM-DD>"
   exit 1
 fi
 
 BATCH_DIR="$1"
-JOBS_FILE="$BATCH_DIR/jobs.json"
+JOBS_FILE="$BATCH_DIR/jobs.ndjson"
 CVS_DIR="$BATCH_DIR/cvs"
 VALIDATE_DIR="$BATCH_DIR/validation-prompts"
 
-# ── Validate inputs ───────────────────────────────────────────
 if [ ! -f "$JOBS_FILE" ]; then
   echo "Error: $JOBS_FILE not found"
   exit 1
@@ -37,7 +35,6 @@ CV_BASENAME=$(basename "$GENERIC_CV" .html)
 
 mkdir -p "$VALIDATE_DIR"
 
-# ── Helpers ───────────────────────────────────────────────────
 slugify() {
   echo "$1" \
     | tr '[:upper:]' '[:lower:]' \
@@ -64,14 +61,12 @@ process_job() {
   slug=$(slugify "$company_val")
   local cv_file="$CVS_DIR/${CV_BASENAME} - ${slug}.html"
 
-  # Skip if CV doesn't exist yet
   if [ ! -f "$cv_file" ]; then
     echo "⚠ Skipping (no CV file): $company_val"
     skipped=$((skipped + 1))
     return
   fi
 
-  # Skip if CV is still the empty placeholder
   if is_placeholder "$cv_file"; then
     echo "⚠ Skipping (placeholder): $company_val"
     skipped=$((skipped + 1))
@@ -109,38 +104,16 @@ EOF
   count=$((count + 1))
 }
 
-# ── Process each job ─────────────────────────────────────────
 skipped=0
 count=0
-company_val="" title_val="" url_val="" description_val=""
 
-# Process substitution keeps loop execution out of a subshell
-while read -r line || [ -n "$line" ]; do
-
-  if [[ "$line" == "===JOB===" ]]; then
-    process_job
-    company_val="" title_val="" url_val="" description_val=""
-    continue
-  fi
-
-  if [[ "$line" =~ ^\"(company|title|url|description)\"[[:space:]]*:[[:space:]]*\"(.*) ]]; then
-    key="${BASH_REMATCH[1]}"
-    val="${BASH_REMATCH[2]}"
-    
-    val="${val%\"*}"
-    val="${val//\\n/$'\n'}"
-
-    case "$key" in
-      company)     company_val="$val" ;;
-      title)       title_val="$val" ;;
-      url)         url_val="$val" ;;
-      description) description_val="$val" ;;
-    esac
-  fi
-done < <(tr -d '\n\r' < "$JOBS_FILE" | sed -E 's/\{\s*\"/\n===JOB===\n\"/g; s/,\s*\"/\n\"/g')
-
-# Flush the final job block from the memory buffer
-process_job
+while IFS= read -r job || [ -n "$job" ]; do
+  [ -z "$job" ] && continue
+  company_val=$(printf '%s' "$job" | sed -n 's/.*"company"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+  title_val=$(printf '%s' "$job" | sed -n 's/.*"title"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+  description_val=$(printf '%s' "$job" | sed -n 's/.*"description"[[:space:]]*:[[:space:]]*"\(.*\)".*/\1/p')
+  process_job
+done < "$JOBS_FILE"
 
 echo ""
 echo "Done — $count validation prompts generated, $skipped skipped"

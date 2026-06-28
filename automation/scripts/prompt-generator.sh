@@ -23,7 +23,7 @@ if [ $# -lt 1 ]; then
 fi
 
 BATCH_DIR="$1"
-JOBS_FILE="$BATCH_DIR/jobs.json"
+JOBS_FILE="$BATCH_DIR/jobs.ndjson"
 GENERIC_CV_DIR="$(dirname "$0")/../../generic-cv"
 GENERIC_CV=$(find "$GENERIC_CV_DIR" -maxdepth 1 -name "*.html" | head -1)
 ASSETS_SRC="$GENERIC_CV_DIR/html-assets"
@@ -33,30 +33,25 @@ if [ -z "$GENERIC_CV" ]; then
   exit 1
 fi
 
-# "Michael Zelensky CV.html" → "Michael Zelensky CV"
 CV_BASENAME=$(basename "$GENERIC_CV" .html)
 
 TAILOR_DIR="$BATCH_DIR/tailor-prompts"
 CVS_DIR="$BATCH_DIR/cvs"
 ASSETS_DST="$CVS_DIR/html-assets"
 
-# ── Validate inputs ───────────────────────────────────────────
 if [ ! -f "$JOBS_FILE" ]; then
   echo "Error: $JOBS_FILE not found"
   exit 1
 fi
 
-# ── Setup dirs ────────────────────────────────────────────────
 mkdir -p "$TAILOR_DIR"
 mkdir -p "$CVS_DIR"
 
-# Copy html-assets once
 if [ -d "$ASSETS_SRC" ] && [ ! -d "$ASSETS_DST" ]; then
   cp -r "$ASSETS_SRC" "$ASSETS_DST"
   echo "Copied html-assets → $ASSETS_DST"
 fi
 
-# ── Helpers ───────────────────────────────────────────────────
 slugify() {
   echo "$1" \
     | tr '[:upper:]' '[:lower:]' \
@@ -82,7 +77,6 @@ process_job() {
   local tailor_file="$TAILOR_DIR/${slug}.txt"
   local cv_out_file="$CVS_DIR/${CV_BASENAME} - ${slug}.html"
 
-  # ── Tailor prompt ─────────────────────────────────────────
   cat > "$tailor_file" <<EOF
 TASK:
 Tailor the CV below for the job description.
@@ -106,7 +100,6 @@ BASE CV (HTML):
 $cv_html
 EOF
 
-  # ── Empty CV shell (skip if already filled) ───────────────
   if [ ! -f "$cv_out_file" ]; then
     cat > "$cv_out_file" <<EOF
 <!-- Placeholder: ${CV_BASENAME} — $company_val -->
@@ -118,37 +111,19 @@ EOF
   count=$((count + 1))
 }
 
-# ── Process each job ─────────────────────────────────────────
 count=0
 company_val="" title_val="" url_val="" description_val=""
 
-# Process substitution prevents loop from running in a subshell, keeping counter accessible
-while read -r line || [ -n "$line" ]; do
+while IFS= read -r job || [ -n "$job" ]; do
+  [ -z "$job" ] && continue
 
-  if [[ "$line" == "===JOB===" ]]; then
-    process_job
-    company_val="" title_val="" url_val="" description_val=""
-    continue
-  fi
+  company_val=$(printf '%s' "$job" | sed -n 's/.*"company"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+  title_val=$(printf '%s' "$job" | sed -n 's/.*"title"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+  description_val=$(printf '%s' "$job" | sed -n 's/.*"description"[[:space:]]*:[[:space:]]*"\(.*\)".*/\1/p')
 
-  if [[ "$line" =~ ^\"(company|title|url|description)\"[[:space:]]*:[[:space:]]*\"(.*) ]]; then
-    key="${BASH_REMATCH[1]}"
-    val="${BASH_REMATCH[2]}"
-    
-    val="${val%\"*}"
-    val="${val//\\n/$'\n'}"
+  process_job
 
-    case "$key" in
-      company)     company_val="$val" ;;
-      title)       title_val="$val" ;;
-      url)         url_val="$val" ;;
-      description) description_val="$val" ;;
-    esac
-  fi
-done < <(tr -d '\n\r' < "$JOBS_FILE" | sed -E 's/\{\s*\"/\n===JOB===\n\"/g; s/,\s*\"/\n\"/g')
-
-# Flush final job block from memory buffer
-process_job
+done < "$JOBS_FILE"
 
 echo ""
 echo "Done — processed $count jobs"

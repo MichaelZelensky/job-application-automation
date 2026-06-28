@@ -182,7 +182,11 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
         return;
     }
 
-    capturedJsonEl.value = JSON.stringify(results, null, 2);
+    const ndjson = results
+        .map(job => JSON.stringify(job))
+        .join('\n');
+    capturedJsonEl.value = ndjson;
+
     setStatus(captureStatusEl, `✓ Captured ${results.length} job${results.length > 1 ? 's' : ''}`);
 });
 
@@ -198,7 +202,7 @@ document.getElementById('downloadJsonBtn').addEventListener('click', () => {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `linkedin-jobs-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `jobs.ndjson`;
     a.click();
     URL.revokeObjectURL(url);
 });
