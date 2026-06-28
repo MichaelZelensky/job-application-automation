@@ -17,14 +17,14 @@ MY CV:
 {{CV}}
 `;
 
-// ── Elements ──────────────────────────────────────────────
+//  Elements 
 const promptTemplateEl = document.getElementById('promptTemplate');
 const cvEl             = document.getElementById('cv');
 const statusEl         = document.getElementById('status');
 const captureStatusEl  = document.getElementById('captureStatus');
 const capturedJsonEl   = document.getElementById('capturedJson');
 
-// ── Nav ───────────────────────────────────────────────────
+//  Nav 
 document.querySelectorAll('nav button').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
@@ -34,7 +34,7 @@ document.querySelectorAll('nav button').forEach(btn => {
     });
 });
 
-// ── Storage ───────────────────────────────────────────────
+//  Storage 
 const saveState = () =>
     new Promise(resolve =>
         chrome.storage.local.set({
@@ -49,7 +49,7 @@ const loadState = async () => {
     cvEl.value             = result.cv || '';
 };
 
-// ── Status helpers ────────────────────────────────────────
+//  Status helpers 
 const setStatus = (el, text, isError = false) => {
     el.textContent = text;
     el.style.color = isError
@@ -57,7 +57,7 @@ const setStatus = (el, text, isError = false) => {
         : text ? 'var(--success)' : '';
 };
 
-// ── Qualification ─────────────────────────────────────────
+//  Qualification 
 const triggerBuildAndCopy = async () => {
     await saveState();
     setStatus(statusEl, 'Building prompt…');
@@ -87,7 +87,7 @@ cvEl.addEventListener('input', saveState);
 
 document.getElementById('buildPrompt').addEventListener('click', triggerBuildAndCopy);
 
-// ── Capture: runs inside each tab ─────────────────────────
+//  Capture: runs inside each tab 
 const getJobDataFromPage = () => {
 
     const standaloneMatch = location.pathname.match(/\/jobs\/view\/(\d+)/);
@@ -136,7 +136,7 @@ const getJobDataFromPage = () => {
     };
 };
 
-// ── Capture button ────────────────────────────────────────
+//  Capture button 
 document.getElementById('captureBtn').addEventListener('click', async () => {
     setStatus(captureStatusEl, 'Scanning tabs…');
     capturedJsonEl.value = '';
@@ -207,5 +207,5 @@ document.getElementById('downloadJsonBtn').addEventListener('click', () => {
     URL.revokeObjectURL(url);
 });
 
-// ── Init ──────────────────────────────────────────────────
+//  Init 
 loadState().then(triggerBuildAndCopy);
