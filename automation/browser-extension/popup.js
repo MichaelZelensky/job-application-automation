@@ -88,7 +88,8 @@ cvEl.addEventListener('input', saveState);
 document.getElementById('buildPrompt').addEventListener('click', triggerBuildAndCopy);
 
 //  Capture: runs inside each tab 
-const getJobDataFromPage = () => {
+const getJobDataFromGoFractional = () => {}
+const getJobDataFromLinkedin = () => {
 
     const standaloneMatch = location.pathname.match(/\/jobs\/view\/(\d+)/);
     const currentJobId =
@@ -157,9 +158,19 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
 
     for (const tab of tabs) {
         try {
+            const getJobDataFunction = {
+                'linkedin.com': getJobDataFromLinkedin,
+                'gofractional.com': getJobDataFromGoFractional
+            };
+
+            const scraper = Object.entries(getJobDataFunction)
+                .find(([domain]) => tab.url?.includes(domain))?.[1];
+
+            if (!scraper) continue;
+
             const [{ result }] = await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
-                func:   getJobDataFromPage
+                func:   scraper
             });
 
             if (!result || !result.jobId) continue;

@@ -1,4 +1,4 @@
-const getJobData = () => {
+const getJobDataFromLinkedin = () => {
 
     const standaloneMatch = location.pathname.match(/\/jobs\/view\/(\d+)/);
     const currentJobId =
@@ -47,6 +47,8 @@ const getJobData = () => {
     };
 };
 
+const getJobDataFromGoFractional = () => {}
+
 const copyViaOffscreen = async text => {
 
     const existing = await chrome.offscreen.hasDocument?.() ?? false;
@@ -69,16 +71,24 @@ const copyViaOffscreen = async text => {
     await chrome.offscreen.closeDocument();
 };
 
-const buildAndCopy = async (tabId, overrides = {}) => {
+const buildAndCopy = async (tab, overrides = {}) => {
 
     const stored = await chrome.storage.local.get(['promptTemplate', 'cv']);
 
     const promptTemplate = overrides.promptTemplate ?? stored.promptTemplate ?? '';
     const cv             = overrides.cv             ?? stored.cv             ?? '';
 
+    const getJobDataFunction = {
+        'linkedin.com': getJobDataFromLinkedin,
+        'gofractional.com': getJobDataFromGoFractional
+    };
+
+    const scraper = Object.entries(getJobDataFunction)
+        .find(([domain]) => tab.url?.includes(domain))?.[1];
+    
     const [{ result: job }] = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: getJobData
+        target: { tabId: tab.id },
+        func: scraper
     });
 
     const jobText = `
@@ -114,7 +124,7 @@ chrome.commands.onCommand.addListener(async command => {
     });
     if (!tab) return;
 
-    await buildAndCopy(tab.id).catch(console.error);
+    await buildAndCopy(tab).catch(console.error);
 });
 
 // Popup message — notify so popup status updates
@@ -133,7 +143,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             return;
         }
 
-        buildAndCopy(tab.id, {
+        buildAndCopy(tab, {
             promptTemplate: message.promptTemplate,
             cv:             message.cv
         })
