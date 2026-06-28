@@ -11,7 +11,7 @@ The browser extension is designed to extract job information from LinkedIn pages
 ## Features
 
 * Capture job descriptions using a browser extension
-* Export jobs into a structured JSON format
+* Export jobs into a structured NDJSON format
 * Generate AI prompts for CV tailoring
 * Generate tailored CVs for each role
 * Generate application-ready PDFs
@@ -30,7 +30,7 @@ Open selected jobs in separate tabs
     ↓
 Capture tabs (browser extension)
     ↓
-jobs.json
+jobs.ndjson
     ↓
 Generate Tailor Prompts
     ↓
@@ -77,7 +77,7 @@ cd job-application-automation
 4. Click **Load unpacked**.
 5. Select:
 
-```text
+```
 automation/browser-extension
 ```
 
@@ -91,23 +91,21 @@ generic-cv/Agent Smith CV.html
 
 ### 1. Create your personal CV file
 
+You are free to update the HTML styling and formatting of the CV to your taste.
+
+To start, you can use the CV template (`generic-cv/Agent Smith CV.html`).
+
 Rename the template using your real full name:
 
 ```
-generic-cv/<Your Full Name> CV.html
-```
-
-Example:
-
-```
-generic-cv/John Silver CV.html
+generic-cv/Your Name CV.html
 ```
 
 This file is the **primary CV source** used for all tailoring and generation.
 
-The repo already includes a default template named **Agent Smith CV.html**, but it must be replaced with your real identity-specific version before use.
+`Agent Smith CV.html` is only a placeholder and must be replaced before use.
 
-Note: `generic-cv/` directory can contain only one html file.
+The `generic-cv/` directory must contain exactly one HTML CV file.
 
 ---
 
@@ -141,9 +139,7 @@ applications/YYYY-MM-DD/cvs/John Silver - Stripe.html
 applications/YYYY-MM-DD/cvs/John Silver - Stripe.pdf
 ```
 
-
 ## Quick Start
-
 
 ### 1. Capture Jobs
 
@@ -153,8 +149,8 @@ Use the browser extension to scan the loaded tabs and export the collected job d
 
 Save the exported file as:
 
-```text
-applications/YYYY-MM-DD/jobs.json
+```
+applications/YYYY-MM-DD/jobs.ndjson
 ```
 
 ### 2. Generate Tailoring Prompts
@@ -204,7 +200,7 @@ Always review generated materials before submission.
 
 The complete workflow, directory structure, generated files, and processing steps are documented in:
 
-```text
+```
 automation/readme.md
 ```
 
@@ -220,11 +216,15 @@ AI assists with:
 
 The user remains responsible for reviewing all generated content and deciding whether to apply.
 
-## Disclaimer
+## Notes
 
-## Supported Platforms
-
-Currently this project supports LinkedIn job listings only.
+* Input format is now **NDJSON (one JSON object per line)**.
+* Scripts are resilient to duplicate or malformed entries depending on capture quality.
+* Company names are slugified for file-safe naming.
+* Only one CV HTML file must exist inside `generic-cv/`.
+* `Agent Smith CV.html` is a placeholder and must be replaced.
+* Profile image `generic-cv/html-assets/me.png` must be replaced.
+* Generated CVs are always derived from the single source CV.
 
 ## Disclaimer
 
