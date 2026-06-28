@@ -54,7 +54,11 @@ const getJobDataFromGoFractional = () => {
         || '';
 
     const company =
-        document.querySelector('header h1 + div span')?.innerText?.trim()
+        document.querySelector('header h1 + div a')?.innerText?.trim()
+        || '';
+
+    const companyUrl =
+        document.querySelector('header h1 + div a')?.href
         || '';
 
     const jobDescription =
@@ -78,7 +82,7 @@ const getJobDataFromGoFractional = () => {
         jobUrl: location.href,
         jobTitle,
         company,
-        companyUrl: '',
+        companyUrl,
         jobDescription: companyDescription
             ? `${jobDescription}\n\nAbout the Company\n${companyDescription}`
             : jobDescription
