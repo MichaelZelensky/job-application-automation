@@ -88,7 +88,63 @@ cvEl.addEventListener('input', saveState);
 document.getElementById('buildPrompt').addEventListener('click', triggerBuildAndCopy);
 
 //  Capture: runs inside each tab 
-const getJobDataFromGoFractional = () => {}
+const getJobDataFromGoFractional = () => {
+
+    const jobTitle =
+        document.querySelector('header h1')?.innerText?.trim()
+        || '';
+
+    const company =
+        [...document.querySelectorAll('header span')]
+            .find(s => s.innerText && !s.innerText.includes('Posted'))
+            ?.innerText?.trim()
+        || '';
+
+    const jobDescription =
+        [...document.querySelectorAll('h2')]
+            .find(h => h.innerText.trim() === 'Job Description')
+            ?.nextElementSibling
+            ?.innerText
+            ?.trim()
+        || '';
+
+    const aboutCompany =
+        [...document.querySelectorAll('h2')]
+            .find(h => h.innerText.trim() === 'About the Company')
+            ?.nextElementSibling
+            ?.innerText
+            ?.trim()
+        || '';
+
+    const rate =
+        [...document.querySelectorAll('div')]
+            .find(d => d.innerText?.includes('$/hr'))
+            ?.innerText?.trim()
+        || '';
+
+    const hours =
+        [...document.querySelectorAll('div')]
+            .find(d => d.innerText?.includes('hrs/week'))
+            ?.innerText?.trim()
+        || '';
+
+    const jobId =
+        location.href.split('?')[0];
+
+    return {
+        jobId,
+        url: location.href.split('?')[0],
+        title: jobTitle,
+        company,
+        companyUrl: '',
+        description: aboutCompany
+            ? `${jobDescription}\n\nABOUT COMPANY\n${aboutCompany}`
+            : jobDescription,
+        rate,
+        hours
+    };
+};
+
 const getJobDataFromLinkedin = () => {
 
     const standaloneMatch = location.pathname.match(/\/jobs\/view\/(\d+)/);
@@ -143,7 +199,10 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
     capturedJsonEl.value = '';
 
     const tabs = await chrome.tabs.query({
-        url: 'https://www.linkedin.com/jobs/*',
+        url: [
+            'https://www.linkedin.com/*',
+            'https://www.gofractional.com/*'
+        ],
         currentWindow: true
     });
 
@@ -156,15 +215,20 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
     const results = [];
     const date    = new Date().toISOString().slice(0, 10);
 
-    for (const tab of tabs) {
+    const getPlatform = (url = '') =>
+        url.includes('linkedin.com') ? 'linkedin'
+        : url.includes('gofractional.com') ? 'gofractional'
+        : 'unknown';
+
+    for (const tab of tabs) {       
         try {
             const getJobDataFunction = {
-                'linkedin.com': getJobDataFromLinkedin,
-                'gofractional.com': getJobDataFromGoFractional
+                'linkedin': getJobDataFromLinkedin,
+                'gofractional': getJobDataFromGoFractional
             };
 
-            const scraper = Object.entries(getJobDataFunction)
-                .find(([domain]) => tab.url?.includes(domain))?.[1];
+            const platform = getPlatform(tab.url);
+            const scraper = getJobDataFunction[platform];
 
             if (!scraper) continue;
 
@@ -173,10 +237,16 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
                 func:   scraper
             });
 
-            if (!result || !result.jobId) continue;
-            if (seen.has(result.jobId))   continue;
+            if (!result) continue;
 
-            seen.add(result.jobId);
+            const uniqueKey =
+                result.jobId
+                    ? `li:${result.jobId}`
+                    : `gf:${result.url}`;
+
+            if (seen.has(uniqueKey)) continue;
+            seen.add(uniqueKey);
+
             results.push({
                 date,
                 jobId:       result.jobId,
@@ -186,8 +256,8 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
                 companyUrl:  result.companyUrl,
                 description: result.description
             });
-        } catch {
-            // Tab may be restricted — skip it
+        } catch (e) {
+            // alert(e);
         }
     }
 

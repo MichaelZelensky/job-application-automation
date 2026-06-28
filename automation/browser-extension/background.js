@@ -47,7 +47,43 @@ const getJobDataFromLinkedin = () => {
     };
 };
 
-const getJobDataFromGoFractional = () => {}
+const getJobDataFromGoFractional = () => {
+
+    const jobTitle =
+        document.querySelector('header h1')?.innerText?.trim()
+        || '';
+
+    const company =
+        document.querySelector('header h1 + div span')?.innerText?.trim()
+        || '';
+
+    const jobDescription =
+        document.querySelector('h2 + .prose')?.innerText?.trim()
+        || [...document.querySelectorAll('h2')]
+            .find(h => h.textContent.trim() === 'Job Description')
+            ?.nextElementSibling
+            ?.innerText
+            ?.trim()
+        || '';
+
+    const companyDescription =
+        [...document.querySelectorAll('h2')]
+            .find(h => h.textContent.trim() === 'About the Company')
+            ?.nextElementSibling
+            ?.innerText
+            ?.trim()
+        || '';
+
+    return {
+        jobUrl: location.href,
+        jobTitle,
+        company,
+        companyUrl: '',
+        jobDescription: companyDescription
+            ? `${jobDescription}\n\nAbout the Company\n${companyDescription}`
+            : jobDescription
+    };
+};
 
 const copyViaOffscreen = async text => {
 
@@ -118,7 +154,10 @@ chrome.commands.onCommand.addListener(async command => {
     if (command !== 'make-prompt') return;
 
     const [tab] = await chrome.tabs.query({
-        url:           'https://www.linkedin.com/*',
+        url: [
+            'https://www.linkedin.com/*',
+            'https://www.gofractional.com/*'
+        ],
         active:        true,
         currentWindow: true
     });
@@ -133,7 +172,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type !== 'BUILD_AND_COPY') return;
 
     chrome.tabs.query({
-        url:           'https://www.linkedin.com/*',
+        url: [
+            'https://www.linkedin.com/*',
+            'https://www.gofractional.com/*'
+        ],
         active:        true,
         currentWindow: true
     }).then(([tab]) => {
