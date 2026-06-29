@@ -196,7 +196,7 @@ const getJobDataFromLinkedin = () => {
 };
 
 const getJobDataFromWellfound = () => {
-    const url = location.href.split('?')[0];
+    const url = location.href;
 
     const modalRoot =
         document.querySelector('.ReactModal__Content--after-open')
@@ -208,13 +208,12 @@ const getJobDataFromWellfound = () => {
 
     const jobTitle =
         modalRoot.querySelector('h1.text-xl')
-        ?.innerText?.trim()
+            ?.innerText?.trim()
         || '';
 
-    // IMPORTANT: scope to header block that contains company info
     const companyAnchor =
         [...modalRoot.querySelectorAll('a[href^="/company/"]')]
-            .find(a => a.closest('.ml-4') || a.querySelector('span'));
+            .find(anchor => anchor.closest('.ml-4') || anchor.querySelector('span'));
 
     const company =
         companyAnchor?.querySelector('span')?.innerText?.trim()
@@ -229,7 +228,7 @@ const getJobDataFromWellfound = () => {
     const jobDescription =
         modalRoot.querySelector('#job-description')
             ? [...modalRoot.querySelectorAll('#job-description p')]
-                .map(p => p.innerText?.trim())
+                .map(paragraph => paragraph.innerText?.trim())
                 .filter(Boolean)
                 .join('\n')
             : '';
