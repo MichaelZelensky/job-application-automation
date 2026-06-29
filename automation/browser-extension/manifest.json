@@ -22,8 +22,11 @@
 
   "host_permissions": [
     "https://www.linkedin.com/*",
+    "https://linkedin.com/*",
     "https://www.gofractional.com/*",
-    "https://www.wellfound.com/*"
+    "https://gofractional.com/*",
+    "https://www.wellfound.com/*",
+    "https://wellfound.com/*"
   ],
 
   "action": {
