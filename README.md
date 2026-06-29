@@ -8,8 +8,9 @@ Currently this project supports:
 
 * LinkedIn job listings
 * GoFractional job listings
+* WellFound job listings
 
-The browser extension is designed to extract job information from both LinkedIn and GoFractional pages. Other job boards have not been tested.
+The browser extension is designed to extract job information from the supported platform job pages. Other job boards have not been tested.
 
 ## Features
 
@@ -226,7 +227,7 @@ The user remains responsible for reviewing all generated content and deciding wh
 * `Agent Smith CV.html` is a placeholder and must be replaced.
 * Profile image `generic-cv/html-assets/me.png` must be replaced.
 * Generated CVs are always derived from the single source CV.
-* Supported platforms: LinkedIn + GoFractional.
+* Supported platforms: see above.
 
 ## Disclaimer
 

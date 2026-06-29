@@ -89,6 +89,55 @@ const getJobDataFromGoFractional = () => {
     };
 };
 
+const getJobDataFromWellfound = () => {
+    const url = location.href.split('?')[0];
+
+    const modalRoot =
+        document.querySelector('.ReactModal__Content--after-open')
+        || document;
+
+    const jobId =
+        new URLSearchParams(location.search).get('job_listing_slug')
+        || url;
+
+    const jobTitle =
+        modalRoot.querySelector('h1.text-xl')
+        ?.innerText?.trim()
+        || '';
+
+    // IMPORTANT: scope to header block that contains company info
+    const companyAnchor =
+        [...modalRoot.querySelectorAll('a[href^="/company/"]')]
+            .find(a => a.closest('.ml-4') || a.querySelector('span'));
+
+    const company =
+        companyAnchor?.querySelector('span')?.innerText?.trim()
+        || companyAnchor?.innerText?.trim()
+        || '';
+
+    const companyUrl =
+        companyAnchor?.href
+            ? new URL(companyAnchor.href, location.origin).href
+            : '';
+
+    const jobDescription =
+        modalRoot.querySelector('#job-description')
+            ? [...modalRoot.querySelectorAll('#job-description p')]
+                .map(p => p.innerText?.trim())
+                .filter(Boolean)
+                .join('\n')
+            : '';
+
+    return {
+        jobId,
+        jobUrl: url,
+        jobTitle,
+        company,
+        companyUrl,
+        jobDescription
+    };
+};
+
 const copyViaOffscreen = async text => {
 
     const existing = await chrome.offscreen.hasDocument?.() ?? false;
@@ -120,7 +169,8 @@ const buildAndCopy = async (tab, overrides = {}) => {
 
     const getJobDataFunction = {
         'linkedin.com': getJobDataFromLinkedin,
-        'gofractional.com': getJobDataFromGoFractional
+        'gofractional.com': getJobDataFromGoFractional,
+        'wellfound.com': getJobDataFromWellfound
     };
 
     const scraper = Object.entries(getJobDataFunction)
@@ -160,7 +210,8 @@ chrome.commands.onCommand.addListener(async command => {
     const [tab] = await chrome.tabs.query({
         url: [
             'https://www.linkedin.com/*',
-            'https://www.gofractional.com/*'
+            'https://www.gofractional.com/*',
+            'https://wellfound.com/*'
         ],
         active:        true,
         currentWindow: true
@@ -178,14 +229,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     chrome.tabs.query({
         url: [
             'https://www.linkedin.com/*',
-            'https://www.gofractional.com/*'
+            'https://www.gofractional.com/*',
+            'https://wellfound.com/*'
         ],
         active:        true,
         currentWindow: true
     }).then(([tab]) => {
 
         if (!tab) {
-            sendResponse({ error: 'No active LinkedIn tab found' });
+            sendResponse({ error: 'No active job tab found' });
             return;
         }
 

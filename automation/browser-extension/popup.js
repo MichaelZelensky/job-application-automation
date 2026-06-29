@@ -195,6 +195,55 @@ const getJobDataFromLinkedin = () => {
     };
 };
 
+const getJobDataFromWellfound = () => {
+    const url = location.href.split('?')[0];
+
+    const modalRoot =
+        document.querySelector('.ReactModal__Content--after-open')
+        || document;
+
+    const jobId =
+        new URLSearchParams(location.search).get('job_listing_slug')
+        || url;
+
+    const jobTitle =
+        modalRoot.querySelector('h1.text-xl')
+        ?.innerText?.trim()
+        || '';
+
+    // IMPORTANT: scope to header block that contains company info
+    const companyAnchor =
+        [...modalRoot.querySelectorAll('a[href^="/company/"]')]
+            .find(a => a.closest('.ml-4') || a.querySelector('span'));
+
+    const company =
+        companyAnchor?.querySelector('span')?.innerText?.trim()
+        || companyAnchor?.innerText?.trim()
+        || '';
+
+    const companyUrl =
+        companyAnchor?.href
+            ? new URL(companyAnchor.href, location.origin).href
+            : '';
+
+    const jobDescription =
+        modalRoot.querySelector('#job-description')
+            ? [...modalRoot.querySelectorAll('#job-description p')]
+                .map(p => p.innerText?.trim())
+                .filter(Boolean)
+                .join('\n')
+            : '';
+
+    return {
+        jobId,
+        url,
+        title: jobTitle,
+        company,
+        companyUrl,
+        description: jobDescription
+    };
+};
+
 //  Capture button 
 document.getElementById('captureBtn').addEventListener('click', async () => {
     setStatus(captureStatusEl, 'Scanning tabs…');
@@ -203,7 +252,8 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
     const tabs = await chrome.tabs.query({
         url: [
             'https://www.linkedin.com/*',
-            'https://www.gofractional.com/*'
+            'https://www.gofractional.com/*',
+            'https://wellfound.com/*'
         ],
         currentWindow: true
     });
@@ -220,13 +270,15 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
     const getPlatform = (url = '') =>
         url.includes('linkedin.com') ? 'linkedin'
         : url.includes('gofractional.com') ? 'gofractional'
+        : url.includes('wellfound.com') ? 'wellfound'
         : 'unknown';
 
     for (const tab of tabs) {       
         try {
             const getJobDataFunction = {
-                'linkedin': getJobDataFromLinkedin,
-                'gofractional': getJobDataFromGoFractional
+                linkedin: getJobDataFromLinkedin,
+                gofractional: getJobDataFromGoFractional,
+                wellfound: getJobDataFromWellfound
             };
 
             const platform = getPlatform(tab.url);
