@@ -111,6 +111,22 @@ const ensureDirs = (ctx: Context): void => {
   fs.mkdirSync(ctx.cvsDir, { recursive: true });
 };
 
+const isPlaceholderCv = (html: string): boolean =>
+  html.includes("<!-- Placeholder CV");
+
+const shouldSkipAiGeneration = (cvFile: string): boolean => {
+  if (!fs.existsSync(cvFile)) {
+    return false;
+  }
+
+  const html = fs.readFileSync(cvFile, "utf-8").trim();
+
+  return (
+    html.length > 0 &&
+    !isPlaceholderCv(html)
+  );
+};
+
 const createTailorFiles = (ctx: Context, job: Job): void => {
   const company = job.company && job.company !== "null" ? job.company : "unknown";
   const slug = slugify(company);
@@ -123,14 +139,17 @@ const createTailorFiles = (ctx: Context, job: Job): void => {
 
   fs.writeFileSync(tailorFile, buildPrompt(job, ctx.genericCvHtml), "utf-8");
 
-  if (!fs.existsSync(cvFile)) {
-    fs.writeFileSync(
-      cvFile,
-      `<!-- Placeholder CV — ${company} -->
-<!-- Paste generated HTML here from tailor-prompts/${slug}.txt -->`,
-      "utf-8"
-    );
+  if (shouldSkipAiGeneration(cvFile)) {
+    console.log(`✓ ${company} → already exists (protected)`);
+    return;
   }
+
+  fs.writeFileSync(
+    cvFile,
+    `<!-- Placeholder CV — ${company} -->
+<!-- Paste generated HTML here from tailor-prompts/${slug}.txt -->`,
+    "utf-8"
+  );
 
   console.log(`✓ ${company} → ${slug}`);
 };
@@ -236,19 +255,6 @@ const runAiTailoring = async (
     console.error((e as Error).message);
     return false;
   }
-};
-
-const shouldSkipAiGeneration = (cvFile: string): boolean => {
-  if (!fs.existsSync(cvFile)) {
-    return false;
-  }
-
-  const html = fs.readFileSync(cvFile, "utf-8").trim();
-
-  return (
-    html.length > 0 &&
-    !html.includes("Paste generated HTML here")
-  );
 };
 
 const run = async (): Promise<void> => {
