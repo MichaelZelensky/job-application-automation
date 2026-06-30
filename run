@@ -4,41 +4,135 @@ set -euo pipefail
 CMD="${1:-}"
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SCRIPTS_DIR="$ROOT_DIR/automation/scripts"
+APP_DIR="$ROOT_DIR/automation/tailor-app"
 
 shift || true
 
+log() {
+  echo "[run] $1"
+}
+
+check_runtime() {
+  log "Checking runtime..."
+
+  if ! command -v node >/dev/null 2>&1; then
+    echo ""
+    echo "BLOCKER: Node.js is not installed"
+    echo "Install: https://nodejs.org/"
+    exit 1
+  fi
+
+  if ! command -v npm >/dev/null 2>&1; then
+    echo ""
+    echo "BLOCKER: npm is not available"
+    echo "Reinstall Node.js: https://nodejs.org/"
+    exit 1
+  fi
+
+  NODE_VERSION_RAW=$(node -v 2>/dev/null || echo "v0.0.0")
+  NODE_VERSION=${NODE_VERSION_RAW#v}
+  NODE_MAJOR=${NODE_VERSION%%.*}
+
+  if [ "$NODE_MAJOR" -lt 18 ]; then
+    echo ""
+    echo "BLOCKER: Node.js version too old"
+    echo "Detected: $NODE_VERSION_RAW"
+    echo "Required: v18+"
+    echo "Install: https://nodejs.org/"
+    exit 1
+  fi
+
+  log "Node OK: $NODE_VERSION_RAW"
+}
+
+install() {
+  check_runtime
+
+  log "Installing tailor-app..."
+
+  cd "$APP_DIR"
+
+  if [ ! -f package.json ]; then
+    echo "ERROR: package.json not found in $APP_DIR"
+    exit 1
+  fi
+
+  if [ ! -d node_modules ]; then
+    npm install
+  else
+    log "node_modules exists"
+  fi
+
+  log "Building..."
+  npm run build
+
+  log "Install complete"
+}
+
+ensure_built() {
+  check_runtime
+
+  cd "$APP_DIR"
+
+  if [ ! -d node_modules ]; then
+    echo "Missing dependencies. Run: ./run install"
+    exit 1
+  fi
+
+  if [ ! -f dist/tailor.js ] || [ ! -f dist/validate.js ] || [ ! -f dist/pdf.js ]; then
+    log "Build missing → building..."
+    npm run build
+  fi
+}
+
 tailor() {
   local batch_dir="${1:-}"
+
   if [ -z "$batch_dir" ]; then
     echo "Usage: run tailor applications/YYYY-MM-DD"
     exit 1
   fi
 
-  "$SCRIPTS_DIR/prompt-generator.sh" "$batch_dir"
+  ensure_built
+
+  cd "$APP_DIR"
+  node dist/tailor.js "$ROOT_DIR/$batch_dir"
 }
 
 validate() {
   local batch_dir="${1:-}"
+
   if [ -z "$batch_dir" ]; then
     echo "Usage: run validate applications/YYYY-MM-DD"
     exit 1
   fi
 
-  "$SCRIPTS_DIR/validation-prompt-generator.sh" "$batch_dir"
+  ensure_built
+
+  cd "$APP_DIR"
+  node dist/validate.js "$ROOT_DIR/$batch_dir"
 }
 
 pdf() {
   local batch_dir="${1:-}"
+
   if [ -z "$batch_dir" ]; then
     echo "Usage: run pdf applications/YYYY-MM-DD"
     exit 1
   fi
 
-  "$SCRIPTS_DIR/pdf-generator.sh" "$batch_dir"
+  ensure_built
+
+  cd "$APP_DIR"
+  node dist/pdf.js "$ROOT_DIR/$batch_dir"
 }
 
+log "Command: $CMD"
+
 case "$CMD" in
+  install)
+    install
+    ;;
   tailor)
     tailor "$@"
     ;;
@@ -49,9 +143,9 @@ case "$CMD" in
     pdf "$@"
     ;;
   *)
-    echo "Unknown command: $CMD"
     echo ""
     echo "Usage:"
+    echo "  run install"
     echo "  run tailor applications/YYYY-MM-DD"
     echo "  run validate applications/YYYY-MM-DD"
     echo "  run pdf applications/YYYY-MM-DD"

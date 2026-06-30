@@ -1,4 +1,4 @@
-## Job Application Automation
+# Job Application Automation
 
 End-to-end workflow for finding, qualifying, tailoring, validating, and applying to jobs using AI.
 
@@ -45,7 +45,7 @@ Generate PDFs
 Validate Fit
     ↓
 Apply
-```
+````
 
 ## Repository Structure
 
@@ -53,7 +53,7 @@ Apply
 .
 ├── automation/
 │   ├── browser-extension/
-│   ├── scripts/
+│   ├── tailor-app/
 │   └── readme.md
 ├── generic-cv/
 ├── applications/
@@ -62,29 +62,76 @@ Apply
 
 ## Requirements
 
-* Google Chrome
-* Bash
-* ChatGPT, Claude, or another LLM capable of editing HTML documents
+* Google Chrome or Microsoft Edge
+* Bash (Git Bash on Windows is fine)
+* Node.js 18+ (LTS recommended)
+* npm (bundled with Node.js)
 
 ## Installation
 
 ```bash
 git clone https://github.com/MichaelZelensky/job-application-automation.git
 cd job-application-automation
+
 chmod +x run
-chmod +x automation/scripts/*.sh
+
+./run install
 ```
 
-### Install the Browser Extension
+This command will:
 
-1. Open Chrome.
-2. Navigate to `chrome://extensions`.
-3. Enable **Developer mode**.
-4. Click **Load unpacked**.
-5. Select:
+* check Node.js and npm
+* install dependencies in `automation/tailor-app`
+* build TypeScript sources
 
+## Running
+
+All automation is controlled via a single runner:
+
+### 1. Tailor CVs
+
+```bash
+./run tailor applications/YYYY-MM-DD
 ```
-automation/browser-extension
+
+Generates:
+
+* AI prompts for CV tailoring
+* CV HTML placeholders per company
+
+### 2. Generate PDFs
+
+```bash
+./run pdf applications/YYYY-MM-DD
+```
+
+Generates:
+
+* PDF versions of completed CVs
+* skips empty or placeholder CVs automatically
+
+### 3. Validate CV fit
+
+```bash
+./run validate applications/YYYY-MM-DD
+```
+
+Generates:
+
+* validation prompts for completed CVs
+* skips placeholder CVs automatically
+
+## Full Workflow (recommended)
+
+```bash
+./run install
+
+./run tailor applications/YYYY-MM-DD
+# manually generate CVs using AI
+
+./run pdf applications/YYYY-MM-DD
+
+./run validate applications/YYYY-MM-DD
 ```
 
 ## CV Setup (Required)
@@ -97,147 +144,62 @@ generic-cv/Agent Smith CV.html
 
 ### 1. Create your personal CV file
 
-You are free to update the HTML styling and formatting of the CV to your taste.
-
-To start, you can use the CV template (`generic-cv/Agent Smith CV.html`).
-
-Rename the template using your real full name:
+Rename the template:
 
 ```
 generic-cv/Your Name CV.html
 ```
 
-This file is the **primary CV source** used for all tailoring and generation.
+This file is the **primary CV source** used for all tailoring.
 
-`Agent Smith CV.html` is only a placeholder and must be replaced before use.
+`Agent Smith CV.html` is only a placeholder and must be replaced.
 
-The `generic-cv/` directory must contain exactly one HTML CV file.
+Only one HTML file must exist inside `generic-cv/`.
 
 ### 2. Profile photo
 
-Replace the default image:
+Replace:
 
 ```
 generic-cv/html-assets/me.png
 ```
 
-with your real profile photo.
+This image is used in all generated CV variants.
 
-This image is automatically embedded into all generated CV variants.
+### 3. Output naming
 
-### 3. Naming convention for generated CVs
-
-All script-generated tailored CVs will follow this structure:
+Generated files:
 
 ```
-applications/YYYY-MM-DD/cvs/<your_cv_filename> - <Company>.html
-applications/YYYY-MM-DD/cvs/<your_cv_filename> - <Company>.pdf
+applications/YYYY-MM-DD/cvs/<Your CV> - <Company>.html
+applications/YYYY-MM-DD/cvs/<Your CV> - <Company>.pdf
 ```
 
 Example:
 
 ```
-applications/YYYY-MM-DD/cvs/John Silver - Stripe.html
-applications/YYYY-MM-DD/cvs/John Silver - Stripe.pdf
+applications/2026-06-29/cvs/John Silver - Stripe.html
+applications/2026-06-29/cvs/John Silver - Stripe.pdf
 ```
-
-## Quick Start
-
-### 1. Capture Jobs
-
-Open the job listings you want to review in browser tabs.
-
-Use the browser extension to scan the loaded tabs and export the collected job data.
-
-Save the exported file as:
-
-```
-applications/YYYY-MM-DD/jobs.ndjson
-```
-
-### 2. Generate Tailoring Prompts
-
-```bash
-cd automation/scripts
-./prompt-generator.sh ../../applications/YYYY-MM-DD
-```
-
-This generates:
-
-* Tailoring prompts
-* CV placeholders
-* Shared HTML assets
-
-### 3. Tailor CVs
-
-For each generated tailoring prompt:
-
-1. Open the prompt.
-2. Paste it into ChatGPT, Claude, or another LLM.
-3. Generate a tailored CV.
-4. Save the generated HTML into the corresponding CV file.
-
-### 4. Generate PDFs
-
-Generate PDF versions of the tailored CVs.
-
-These PDFs can be used when applying to jobs.
-
-### 5. Validate Candidate Fit
-
-```bash
-cd automation/scripts
-./validation-prompt-generator.sh ../../applications/YYYY-MM-DD
-```
-
-Review the generated validation prompts with an LLM to assess whether the tailored CV is a strong match for the role.
-
-### 6. Apply
-
-Submit the generated PDFs through the appropriate application channels.
-
-Always review generated materials before submission.
-
-## Detailed Documentation
-
-The complete workflow, directory structure, generated files, and processing steps are documented in:
-
-```
-automation/readme.md
-```
-
-## Philosophy
-
-This project is intentionally human-in-the-loop.
-
-AI assists with:
-
-* Job qualification
-* CV tailoring
-* Candidate-job fit validation
-
-The user remains responsible for reviewing all generated content and deciding whether to apply.
 
 ## Notes
 
-* Input format is now **NDJSON (one JSON object per line)**.
-* Scripts are resilient to duplicate or malformed entries depending on capture quality.
-* Company names are slugified for file-safe naming.
-* Only one CV HTML file must exist inside `generic-cv/`.
-* `Agent Smith CV.html` is a placeholder and must be replaced.
-* Profile image `generic-cv/html-assets/me.png` must be replaced.
-* Generated CVs are always derived from the single source CV.
-* Supported platforms: see above.
+* Input format is NDJSON (one JSON object per line)
+* Scripts skip placeholder CVs automatically
+* Company names are slugified for safe filenames
+* Only one CV HTML file is allowed in `generic-cv/`
+* All automation runs through `./run`
+* Node.js 18+ is required
 
 ## Disclaimer
 
 This project is an independent tool and is not affiliated with, endorsed by, or sponsored by LinkedIn.
 
-The browser extension only reads information that is already present in loaded browser pages. It does not perform automated submissions, direct HTTP requests, or other automated interactions with external services.
+The browser extension only reads information already present in loaded pages. It does not perform automated submissions or interactions with external services.
 
-Users are solely responsible for ensuring that their use of this project complies with applicable terms of service, policies, and laws.
+Users are responsible for compliance with all applicable terms, policies, and laws.
 
-This software is provided "as is", without warranties of any kind. The authors and contributors are not responsible for account restrictions, account suspensions, data loss, employment outcomes, or any other damages arising from the use of this project.
+This software is provided "as is", without warranties of any kind.
 
 ## License
 

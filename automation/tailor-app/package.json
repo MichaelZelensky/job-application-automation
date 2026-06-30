@@ -1,0 +1,22 @@
+{
+  "name": "tailor-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI CV pipeline",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+
+    "tailor": "node dist/tailor.js",
+    "validate": "node dist/validate.js",
+    "pdf": "node dist/pdf.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
