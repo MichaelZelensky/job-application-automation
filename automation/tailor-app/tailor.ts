@@ -191,19 +191,18 @@ const callOpenAI = async (prompt: string): Promise<string> => {
 const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
   const company =
     job.company && job.company !== "null" ? job.company : "unknown";
-
   const slug = slugify(company);
-
   const tailorFile = path.join(ctx.tailorDir, `${slug}.txt`);
   const cvFile = path.join(
     ctx.cvsDir,
     `${ctx.cvBaseName} - ${slug}.html`
   );
-
+  if (shouldSkipAiGeneration(cvFile)) {
+    console.log(`✓ ${company} → already exists (skipped)`);
+    return;
+  }
   const prompt = buildPrompt(job, ctx.genericCvHtml);
-
   fs.writeFileSync(tailorFile, prompt, "utf-8");
-
   try {
     console.log(`✓ ${company} → waiting for OpenAI...`);
     const startedAt = Date.now();
@@ -215,6 +214,19 @@ const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
     console.error(`✗ ${company} → AI failed`);
     console.error((e as Error).message);
   }
+};
+
+const shouldSkipAiGeneration = (cvFile: string): boolean => {
+  if (!fs.existsSync(cvFile)) {
+    return false;
+  }
+
+  const html = fs.readFileSync(cvFile, "utf-8").trim();
+
+  return (
+    html.length > 0 &&
+    !html.includes("Paste generated HTML here")
+  );
 };
 
 const run = async (): Promise<void> => {
