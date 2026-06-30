@@ -45,6 +45,23 @@ check_runtime() {
   log "Node OK: $NODE_VERSION_RAW"
 }
 
+ensure_secrets() {
+  local secrets_example="$ROOT_DIR/secrets.example.json"
+  local secrets_file="$ROOT_DIR/secrets.json"
+
+  if [ ! -f "$secrets_file" ]; then
+    if [ -f "$secrets_example" ]; then
+      cp "$secrets_example" "$secrets_file"
+      log "Created secrets.json from example"
+    else
+      echo "BLOCKER: secrets.example.json not found in $ROOT_DIR"
+      exit 1
+    fi
+  else
+    log "secrets.json exists"
+  fi
+}
+
 install() {
   check_runtime
 
@@ -56,6 +73,8 @@ install() {
     echo "ERROR: package.json not found in $APP_DIR"
     exit 1
   fi
+
+  ensure_secrets
 
   if [ ! -d node_modules ]; then
     npm install
@@ -74,6 +93,8 @@ ensure_built() {
 
   cd "$APP_DIR"
 
+  ensure_secrets
+
   if [ ! -d node_modules ]; then
     echo "Missing dependencies. Run: ./run install"
     exit 1
@@ -86,17 +107,30 @@ ensure_built() {
 }
 
 tailor() {
-  local batch_dir="${1:-}"
+  local ai_flag=""
+  local batch_dir=""
+
+  for arg in "$@"; do
+    case "$arg" in
+      -ai)
+        ai_flag="-ai"
+        ;;
+      *)
+        batch_dir="$arg"
+        ;;
+    esac
+  done
 
   if [ -z "$batch_dir" ]; then
-    echo "Usage: run tailor applications/YYYY-MM-DD"
+    echo "Usage: run tailor [-ai] applications/YYYY-MM-DD"
     exit 1
   fi
 
   ensure_built
 
   cd "$APP_DIR"
-  node dist/tailor.js "$ROOT_DIR/$batch_dir"
+
+  node dist/tailor.js "$ROOT_DIR/$batch_dir" $ai_flag
 }
 
 validate() {

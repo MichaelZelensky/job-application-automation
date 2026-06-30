@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import OpenAI from "openai";
 
 type Job = {
   company?: string;
@@ -21,7 +22,7 @@ type Context = {
 const getBatchDir = (): string => {
   const arg = process.argv[2];
   if (!arg) {
-    console.error("Usage: node tailor.js <applications/YYYY-MM-DD>");
+    console.error("Usage: node tailor.js [-ai] <applications/YYYY-MM-DD>");
     process.exit(1);
   }
   return arg;
@@ -81,8 +82,13 @@ const copyAssets = (rootDir: string, cvsDir: string): void => {
 const buildPrompt = (job: Job, cvHtml: string): string => `
 TASK:
 Tailor the CV below for the job description.
-Produce complete updated HTML — do not truncate or summarise.
-Keep the same HTML structure and styles as the original.
+
+STRICT RULES:
+- Return COMPLETE valid HTML
+- Do NOT truncate or summarize
+- Keep ORIGINAL structure and styling intact
+- Only modify content (text, bullet points, ordering if needed)
+- Do NOT introduce new frameworks or rewrite layout
 
 ---
 
@@ -130,8 +136,73 @@ const createTailorFiles = (ctx: Context, job: Job): void => {
   console.log(`✓ ${company} → ${slug}`);
 };
 
-const run = (): void => {
+const isAiMode = (): boolean => process.argv.includes("-ai");
+
+const loadSecrets = (): { openaiApiKey: string } => {
+  const secretsPath = path.resolve(__dirname, "../../../secrets.json");
+
+  if (!fs.existsSync(secretsPath)) {
+    throw new Error("Missing secrets.json in project root");
+  }
+
+  return JSON.parse(fs.readFileSync(secretsPath, "utf-8"));
+};
+
+const secrets = loadSecrets();
+
+const openai = new OpenAI({
+  apiKey: secrets.openaiApiKey
+});
+
+const callOpenAI = async (prompt: string): Promise<string> => {
+  const res = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    temperature: 0.4,
+    messages: [
+      {
+        role: "system",
+        content: "Return ONLY valid HTML. No markdown, no explanation."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ]
+  });
+
+  return res.choices[0]?.message?.content ?? "";
+};
+
+/**
+ * AI MODE:
+ * - generates tailored CV via OpenAI
+ */
+const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
+  const company =
+    job.company && job.company !== "null" ? job.company : "unknown";
+
+  const slug = slugify(company);
+
+  const tailorFile = path.join(ctx.tailorDir, `${slug}.txt`);
+  const cvFile = path.join(
+    ctx.cvsDir,
+    `${ctx.cvBaseName} - ${slug}.html`
+  );
+
+  const prompt = buildPrompt(job, ctx.genericCvHtml);
+
+  fs.writeFileSync(tailorFile, prompt, "utf-8");
+
+  const html = await callOpenAI(prompt);
+
+  fs.writeFileSync(cvFile, html, "utf-8");
+
+  console.log(`✓ ${company} → AI filled`);
+};
+
+const run = async (): Promise<void> => {
   const batchDir = getBatchDir();
+  const ai = isAiMode();
 
   const rootDir = getProjectRoot();
 
@@ -166,14 +237,25 @@ const run = (): void => {
 
   for (const job of jobs) {
     if (!job.company && !job.title) continue;
-    createTailorFiles(ctx, job);
+
+    if (ai) {
+      await runAiTailoring(ctx, job);
+    } else {
+      createTailorFiles(ctx, job);
+    }
+
     count++;
   }
 
   console.log("");
   console.log(`Done — processed ${count} jobs`);
   console.log(`  tailor prompts : ${tailorDir}`);
-  console.log(`  CV shells      : ${cvsDir}`);
+
+  if (ai) {
+    console.log(`  CVs (AI filled): ${cvsDir}`);
+  } else {
+    console.log(`  CV shells      : ${cvsDir}`);
+  }
 };
 
 run();
