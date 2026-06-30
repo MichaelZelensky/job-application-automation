@@ -38,14 +38,14 @@ jobs.ndjson
     ↓
 Generate Tailor Prompts
     ↓
-Tailor CVs with AI
+(Optional) Tailor CVs with OpenAI
     ↓
 Generate PDFs
     ↓
 Validate Fit
     ↓
 Apply
-````
+```
 
 ## Repository Structure
 
@@ -55,8 +55,11 @@ Apply
 │   ├── browser-extension/
 │   ├── tailor-app/
 │   └── readme.md
-├── generic-cv/
 ├── applications/
+├── generic-cv/
+├── secrets.example.json
+├── secrets.json
+├── run
 └── README.md
 ```
 
@@ -66,6 +69,7 @@ Apply
 * Bash (Git Bash on Windows is fine)
 * Node.js 18+ (LTS recommended)
 * npm (bundled with Node.js)
+* OpenAI API key (optional, for automatic tailoring)
 
 ## Installation
 
@@ -83,12 +87,33 @@ This command will:
 * check Node.js and npm
 * install dependencies in `automation/tailor-app`
 * build TypeScript sources
+* create `secrets.json` from `secrets.example.json` (if missing)
+
+## OpenAI Setup (Optional)
+
+Automatic CV tailoring requires an OpenAI API key.
+
+After installation, edit:
+
+```text
+secrets.json
+```
+
+Replace the placeholder key:
+
+```json
+{
+  "openaiApiKey": "sk-your-api-key"
+}
+```
+
+If you only want prompt generation, no API key is required.
 
 ## Running
 
-All automation is controlled via a single runner:
+All automation is controlled via a single runner.
 
-### 1. Tailor CVs
+### 1. Generate tailoring prompts (manual workflow)
 
 ```bash
 ./run tailor applications/YYYY-MM-DD
@@ -97,9 +122,24 @@ All automation is controlled via a single runner:
 Generates:
 
 * AI prompts for CV tailoring
-* CV HTML placeholders per company
+* HTML CV placeholders
 
-### 2. Generate PDFs
+You can then use your preferred AI tool to generate the tailored HTML manually.
+
+### 2. Automatically tailor CVs with OpenAI
+
+```bash
+./run tailor -ai applications/YYYY-MM-DD
+```
+
+Generates:
+
+* tailoring prompts
+* tailored HTML CVs using OpenAI
+
+Existing completed CVs are skipped automatically.
+
+### 3. Generate PDFs
 
 ```bash
 ./run pdf applications/YYYY-MM-DD
@@ -108,26 +148,46 @@ Generates:
 Generates:
 
 * PDF versions of completed CVs
-* skips empty or placeholder CVs automatically
 
-### 3. Validate CV fit
+Automatically skips:
+
+* placeholder CVs
+* empty CVs
+
+### 4. Validate CV fit
 
 ```bash
 ./run validate applications/YYYY-MM-DD
 ```
 
-Generates:
+Generates validation prompts for completed CVs.
 
-* validation prompts for completed CVs
-* skips placeholder CVs automatically
+Automatically skips placeholder CVs.
 
-## Full Workflow (recommended)
+## Full Workflows
+
+### Manual
 
 ```bash
 ./run install
 
 ./run tailor applications/YYYY-MM-DD
-# manually generate CVs using AI
+
+# Generate HTML using your preferred AI
+
+./run pdf applications/YYYY-MM-DD
+
+./run validate applications/YYYY-MM-DD
+```
+
+### Automatic (OpenAI)
+
+```bash
+./run install
+
+# Configure secrets.json
+
+./run tailor -ai applications/YYYY-MM-DD
 
 ./run pdf applications/YYYY-MM-DD
 
@@ -138,46 +198,51 @@ Generates:
 
 The repository includes a base CV template:
 
-```
+```text
 generic-cv/Agent Smith CV.html
 ```
 
-### 1. Create your personal CV file
+### 1. Create your personal CV
 
 Rename the template:
 
-```
+```text
 generic-cv/Your Name CV.html
 ```
 
-This file is the **primary CV source** used for all tailoring.
+This file becomes the source CV used for all tailoring.
 
-`Agent Smith CV.html` is only a placeholder and must be replaced.
+`Agent Smith CV.html` is only a placeholder and should be replaced.
 
-Only one HTML file must exist inside `generic-cv/`.
+Exactly one HTML file must exist inside `generic-cv/`.
 
 ### 2. Profile photo
 
 Replace:
 
-```
+```text
 generic-cv/html-assets/me.png
 ```
 
-This image is used in all generated CV variants.
+This image is reused in every generated CV.
 
-### 3. Output naming
+### 3. Output files
 
-Generated files:
+Generated HTML:
 
-```
+```text
 applications/YYYY-MM-DD/cvs/<Your CV> - <Company>.html
+```
+
+Generated PDF:
+
+```text
 applications/YYYY-MM-DD/cvs/<Your CV> - <Company>.pdf
 ```
 
 Example:
 
-```
+```text
 applications/2026-06-29/cvs/John Silver - Stripe.html
 applications/2026-06-29/cvs/John Silver - Stripe.pdf
 ```
@@ -185,9 +250,11 @@ applications/2026-06-29/cvs/John Silver - Stripe.pdf
 ## Notes
 
 * Input format is NDJSON (one JSON object per line)
-* Scripts skip placeholder CVs automatically
 * Company names are slugified for safe filenames
-* Only one CV HTML file is allowed in `generic-cv/`
+* Existing AI-generated CVs are skipped automatically
+* PDF generation skips empty and placeholder CVs
+* Validation skips placeholder CVs
+* Exactly one HTML CV must exist in `generic-cv/`
 * All automation runs through `./run`
 * Node.js 18+ is required
 
