@@ -217,11 +217,13 @@ const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
 const run = async (): Promise<void> => {
   const batchDir = getBatchDir();
   const ai = isAiMode();
-  
+
   if (ai && aiDisabled) {
-    console.error("AI mode requested but disabled. Falling back to manual mode.");
+    console.error("ERROR: AI mode requested but OpenAI is not configured properly.");
+    console.error("Fix secrets.json and retry.");
+    process.exit(1);
   }
-  
+
   const rootDir = getProjectRoot();
 
   const jobsFile = path.join(batchDir, "jobs.ndjson");
@@ -256,12 +258,9 @@ const run = async (): Promise<void> => {
   for (const job of jobs) {
     if (!job.company && !job.title) continue;
 
-    if (ai && !aiDisabled) {
+    if (ai) {
       await runAiTailoring(ctx, job);
     } else {
-      if (ai && aiDisabled && count === 0) {
-        console.error("AI disabled → switching to manual mode for this run");
-      }
       createTailorFiles(ctx, job);
     }
 
