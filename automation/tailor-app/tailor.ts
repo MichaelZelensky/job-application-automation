@@ -137,6 +137,23 @@ const createTailorFiles = (ctx: Context, job: Job): void => {
 
 const isAiMode = (): boolean => process.argv.includes("-ai");
 
+const getAiLimit = (): number => {
+  const index = process.argv.indexOf("-limit");
+
+  if (index === -1) {
+    return 5;
+  }
+
+  const value = Number(process.argv[index + 1]);
+
+  if (!Number.isInteger(value) || value <= 0) {
+    console.error("Invalid -limit value");
+    process.exit(1);
+  }
+
+  return value;
+};
+
 const loadSecrets = (): { openaiApiKey: string } => {
   const secretsPath = path.resolve(__dirname, "../../../secrets.json");
 
@@ -188,7 +205,10 @@ const callOpenAI = async (prompt: string): Promise<string> => {
   return res.choices[0]?.message?.content ?? "";
 };
 
-const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
+const runAiTailoring = async (
+  ctx: Context,
+  job: Job
+): Promise<boolean> => {
   const company =
     job.company && job.company !== "null" ? job.company : "unknown";
   const slug = slugify(company);
@@ -199,7 +219,7 @@ const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
   );
   if (shouldSkipAiGeneration(cvFile)) {
     console.log(`✓ ${company} → already exists (skipped)`);
-    return;
+    return false;
   }
   const prompt = buildPrompt(job, ctx.genericCvHtml);
   fs.writeFileSync(tailorFile, prompt, "utf-8");
@@ -210,9 +230,11 @@ const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
     console.log(`✓ ${company} → received response (${((Date.now() - startedAt) / 1000).toFixed(1)}s)`);
     fs.writeFileSync(cvFile, html, "utf-8");
     console.log(`✓ ${company} → AI filled`);
+    return true;
   } catch (e) {
     console.error(`✗ ${company} → AI failed`);
     console.error((e as Error).message);
+    return false;
   }
 };
 
@@ -232,6 +254,8 @@ const shouldSkipAiGeneration = (cvFile: string): boolean => {
 const run = async (): Promise<void> => {
   const batchDir = getBatchDir();
   const ai = isAiMode();
+  const aiLimit = getAiLimit();
+  let generatedCount = 0;
 
   if (ai && aiDisabled) {
     console.error("ERROR: AI mode requested but OpenAI is not configured properly.");
@@ -272,9 +296,14 @@ const run = async (): Promise<void> => {
 
   for (const job of jobs) {
     if (!job.company && !job.title) continue;
-
     if (ai) {
-      await runAiTailoring(ctx, job);
+      if (await runAiTailoring(ctx, job)) {
+        generatedCount++;
+        if (generatedCount >= aiLimit) {
+          console.log(`Reached AI generation limit (${aiLimit}).`);
+          break;
+        }
+      }
     } else {
       createTailorFiles(ctx, job);
     }

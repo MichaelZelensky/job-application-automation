@@ -108,21 +108,33 @@ ensure_built() {
 
 tailor() {
   local ai_flag=""
+  local limit_flag=""
+  local limit_value=""
   local batch_dir=""
 
-  for arg in "$@"; do
-    case "$arg" in
+  while [ $# -gt 0 ]; do
+    case "$1" in
       -ai)
         ai_flag="-ai"
         ;;
+      -limit)
+        shift
+        limit_flag="-limit"
+        limit_value="$1"
+        ;;
       *)
-        batch_dir="$arg"
+        batch_dir="$1"
         ;;
     esac
+    shift
   done
 
   if [ -z "$batch_dir" ]; then
-    echo "Usage: run tailor [-ai] applications/YYYY-MM-DD"
+    echo "Usage: run tailor [options] applications/YYYY-MM-DD"
+    echo ""
+    echo "Options:"
+    echo "  -ai          Generate tailored CVs using OpenAI"
+    echo "  -limit N     Maximum number of AI-generated CVs (default: 5)"
     exit 1
   fi
 
@@ -130,7 +142,11 @@ tailor() {
 
   cd "$APP_DIR"
 
-  node dist/tailor.js "$ROOT_DIR/$batch_dir" $ai_flag
+  node dist/tailor.js \
+    "$ROOT_DIR/$batch_dir" \
+    $ai_flag \
+    $limit_flag \
+    $limit_value
 }
 
 validate() {
@@ -180,7 +196,11 @@ case "$CMD" in
     echo ""
     echo "Usage:"
     echo "  run install"
-    echo "  run tailor applications/YYYY-MM-DD"
+    echo ""
+    echo "  run tailor [options] applications/YYYY-MM-DD"
+    echo "    -ai          Generate tailored CVs using OpenAI"
+    echo "    -limit N     Maximum number of AI-generated CVs (default: 5)"
+    echo ""
     echo "  run validate applications/YYYY-MM-DD"
     echo "  run pdf applications/YYYY-MM-DD"
     exit 1

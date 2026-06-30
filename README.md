@@ -132,12 +132,28 @@ You can then use your preferred AI tool to generate the tailored HTML manually.
 ./run tailor -ai applications/YYYY-MM-DD
 ```
 
+or limit the number of newly generated CVs:
+
+```bash
+./run tailor -ai -limit 5 applications/YYYY-MM-DD
+```
+
 Generates:
 
 * tailoring prompts
 * tailored HTML CVs using OpenAI
 
 Existing completed CVs are skipped automatically.
+
+The `-limit` option limits the number of **new** CVs generated during the run (default: `5`).
+
+Generation is incremental. Because existing completed CVs are skipped, you can repeatedly run:
+
+```bash
+./run tailor -ai -limit 5 applications/YYYY-MM-DD
+```
+
+Each run will continue from where the previous one stopped, generating the next batch of unfinished CVs. This is useful for controlling OpenAI API usage and cost.
 
 ### 3. Generate PDFs
 
@@ -187,7 +203,7 @@ Automatically skips placeholder CVs.
 
 # Configure secrets.json
 
-./run tailor -ai applications/YYYY-MM-DD
+./run tailor -ai -limit 5 applications/YYYY-MM-DD
 
 ./run pdf applications/YYYY-MM-DD
 
@@ -257,6 +273,7 @@ applications/2026-06-29/cvs/John Silver - Stripe.pdf
 * Exactly one HTML CV must exist in `generic-cv/`
 * All automation runs through `./run`
 * Node.js 18+ is required
+* `-limit` controls only newly generated AI CVs; repeated runs continue with the next unfinished jobs
 
 ## Disclaimer
 
