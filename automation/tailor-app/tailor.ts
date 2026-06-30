@@ -29,7 +29,6 @@ const getBatchDir = (): string => {
 };
 
 const getProjectRoot = (): string => {
-  // tailor.ts → dist → automation/tailor-app → repo root
   return path.resolve(__dirname, "../../..");
 };
 
@@ -145,16 +144,32 @@ const loadSecrets = (): { openaiApiKey: string } => {
     throw new Error("Missing secrets.json in project root");
   }
 
-  return JSON.parse(fs.readFileSync(secretsPath, "utf-8"));
+  const secrets = JSON.parse(fs.readFileSync(secretsPath, "utf-8"));
+
+  if (!secrets.openaiApiKey || secrets.openaiApiKey.includes("YOUR_KEY")) {
+    throw new Error("Invalid OpenAI API key in secrets.json");
+  }
+
+  return secrets;
 };
 
-const secrets = loadSecrets();
+let openai: OpenAI | null = null;
+let aiDisabled = false;
 
-const openai = new OpenAI({
-  apiKey: secrets.openaiApiKey
-});
+try {
+  openai = new OpenAI({
+    apiKey: loadSecrets().openaiApiKey
+  });
+} catch (e) {
+  aiDisabled = true;
+  console.error(`[AI MODE DISABLED] ${(e as Error).message}`);
+}
 
 const callOpenAI = async (prompt: string): Promise<string> => {
+  if (!openai) {
+    throw new Error("OpenAI client not initialized");
+  }
+
   const res = await openai.chat.completions.create({
     model: "gpt-4.1-mini",
     temperature: 0.4,
@@ -173,10 +188,6 @@ const callOpenAI = async (prompt: string): Promise<string> => {
   return res.choices[0]?.message?.content ?? "";
 };
 
-/**
- * AI MODE:
- * - generates tailored CV via OpenAI
- */
 const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
   const company =
     job.company && job.company !== "null" ? job.company : "unknown";
@@ -193,17 +204,24 @@ const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
 
   fs.writeFileSync(tailorFile, prompt, "utf-8");
 
-  const html = await callOpenAI(prompt);
-
-  fs.writeFileSync(cvFile, html, "utf-8");
-
-  console.log(`✓ ${company} → AI filled`);
+  try {
+    const html = await callOpenAI(prompt);
+    fs.writeFileSync(cvFile, html, "utf-8");
+    console.log(`✓ ${company} → AI filled`);
+  } catch (e) {
+    console.error(`✗ ${company} → AI failed`);
+    console.error((e as Error).message);
+  }
 };
 
 const run = async (): Promise<void> => {
   const batchDir = getBatchDir();
   const ai = isAiMode();
-
+  
+  if (ai && aiDisabled) {
+    console.error("AI mode requested but disabled. Falling back to manual mode.");
+  }
+  
   const rootDir = getProjectRoot();
 
   const jobsFile = path.join(batchDir, "jobs.ndjson");
@@ -238,9 +256,12 @@ const run = async (): Promise<void> => {
   for (const job of jobs) {
     if (!job.company && !job.title) continue;
 
-    if (ai) {
+    if (ai && !aiDisabled) {
       await runAiTailoring(ctx, job);
     } else {
+      if (ai && aiDisabled && count === 0) {
+        console.error("AI disabled → switching to manual mode for this run");
+      }
       createTailorFiles(ctx, job);
     }
 
