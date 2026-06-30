@@ -87,6 +87,8 @@ const runPdfGeneration = (
     const command =
         `"${browser}" ` +
         "--headless=new " +
+        "--disable-logging " +
+        "--log-level=3 " +
         "--no-pdf-header-footer " +
         `--print-to-pdf="${absoluteOutput}" ` +
         `"${fileUrl}"`;
