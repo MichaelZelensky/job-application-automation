@@ -205,7 +205,10 @@ const runAiTailoring = async (ctx: Context, job: Job): Promise<void> => {
   fs.writeFileSync(tailorFile, prompt, "utf-8");
 
   try {
+    console.log(`✓ ${company} → waiting for OpenAI...`);
+    const startedAt = Date.now();
     const html = await callOpenAI(prompt);
+    console.log(`✓ ${company} → received response (${((Date.now() - startedAt) / 1000).toFixed(1)}s)`);
     fs.writeFileSync(cvFile, html, "utf-8");
     console.log(`✓ ${company} → AI filled`);
   } catch (e) {
