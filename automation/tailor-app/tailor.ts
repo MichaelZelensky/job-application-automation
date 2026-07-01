@@ -304,6 +304,7 @@ const run = async (): Promise<void> => {
 
   for (const job of jobs) {
     if (!job.company && !job.title) continue;
+    count++;
     if (ai) {
       if (await runAiTailoring(ctx, job)) {
         generatedCount++;
@@ -315,8 +316,6 @@ const run = async (): Promise<void> => {
     } else {
       createTailorFiles(ctx, job);
     }
-
-    count++;
   }
 
   console.log("");
