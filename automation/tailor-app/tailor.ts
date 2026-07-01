@@ -304,6 +304,10 @@ const run = async (): Promise<void> => {
 
   for (const job of jobs) {
     if (!job.company && !job.title) continue;
+    if (!job.description || job.description.trim().length === 0) {
+      console.log(`⏭ Skipped (empty description): ${job.company ?? "unknown"}`);
+      continue;
+    }
     count++;
     if (ai) {
       if (await runAiTailoring(ctx, job)) {
