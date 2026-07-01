@@ -236,22 +236,24 @@ const runAiTailoring = async (
     ctx.cvsDir,
     `${ctx.cvBaseName} - ${slug}.html`
   );
+  console.log();
   if (shouldSkipAiGeneration(cvFile)) {
-    console.log(`✓ ${company} → already exists (skipped)`);
+    console.log(`⏭ Skipped: ${company} - tailored CV already exists`);
     return false;
+  } else {
+    console.log(`▶ Processing: ${company}`);
   }
   const prompt = buildPrompt(job, ctx.genericCvHtml);
   fs.writeFileSync(tailorFile, prompt, "utf-8");
   try {
-    console.log(`✓ ${company} → waiting for OpenAI...`);
+    console.log(`⏳ Waiting for OpenAI...`);
     const startedAt = Date.now();
     const html = await callOpenAI(prompt);
-    console.log(`✓ ${company} → received response (${((Date.now() - startedAt) / 1000).toFixed(1)}s)`);
     fs.writeFileSync(cvFile, html, "utf-8");
-    console.log(`✓ ${company} → AI filled`);
+    console.log(`✓ Completed in ${((Date.now() - startedAt) / 1000).toFixed(1)}s`);
     return true;
   } catch (e) {
-    console.error(`✗ ${company} → AI failed`);
+    console.error(`✗ AI request failed`);
     console.error((e as Error).message);
     return false;
   }
