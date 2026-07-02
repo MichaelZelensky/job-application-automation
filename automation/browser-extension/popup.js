@@ -243,6 +243,104 @@ const getJobDataFromWellfound = () => {
     };
 };
 
+const getJobDataFromIndeed = async () => {
+
+    const waitForElement = (selector, timeout = 3000) =>
+        new Promise(resolve => {
+
+            const existing = document.querySelector(selector);
+            if (existing) {
+                resolve(existing);
+                return;
+            }
+
+            const observer = new MutationObserver(() => {
+                const element = document.querySelector(selector);
+
+                if (element) {
+                    observer.disconnect();
+                    resolve(element);
+                }
+            });
+
+            observer.observe(document.documentElement, {
+                childList: true,
+                subtree: true
+            });
+
+            setTimeout(() => {
+                observer.disconnect();
+                resolve(null);
+            }, timeout);
+        });
+
+    await waitForElement('#jobDescriptionText');
+
+    const root =
+        document.querySelector('.fastviewjob')
+        || document;
+
+    const getText = selector =>
+        root.querySelector(selector)?.innerText?.trim() || '';
+
+    const jobTitle =
+        getText('[data-testid="jobsearch-JobInfoHeader-title"]')
+        || getText('.jobsearch-JobInfoHeader-title');
+
+    const companyAnchor =
+        root.querySelector('[data-company-name="true"] a');
+
+    const company =
+        companyAnchor?.innerText?.trim()
+        || '';
+
+    const companyUrl =
+        companyAnchor?.href
+        || '';
+
+    const description =
+        root.querySelector('#jobDescriptionText')
+            ?.innerText
+            ?.trim()
+        || '';
+
+    const benefits =
+        [...root.querySelectorAll('#benefits li')]
+            .map(li => li.innerText.trim())
+            .filter(Boolean);
+
+    const jobType =
+        getText('#salaryInfoAndJobType');
+
+    const jobLocation =
+        getText('[data-testid="jobsearch-JobInfoHeader-companyLocation"]')
+        || getText('#jobLocationText');
+
+    const params = new URLSearchParams(window.location.search);
+
+    const jobId =
+        params.get('jk')
+        || params.get('vjk')
+        || window.location.href.match(/[?&](?:jk|vjk)=([^&]+)/)?.[1]
+        || '';
+
+    return {
+        jobId,
+        url: jobId
+            ? `https://${window.location.host}/viewjob?jk=${jobId}`
+            : window.location.href.split('?')[0],
+        title: jobTitle,
+        company,
+        companyUrl,
+        description: [
+            jobLocation && `Location: ${jobLocation}`,
+            jobType && `Job type: ${jobType}`,
+            benefits.length && `Benefits:\n${benefits.join('\n')}`,
+            description
+        ].filter(Boolean).join('\n\n')
+    };
+};
+
 //  Capture button 
 document.getElementById('captureBtn').addEventListener('click', async () => {
     setStatus(captureStatusEl, 'Scanning tabs…');
@@ -252,7 +350,8 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
         url: [
             'https://www.linkedin.com/*',
             'https://www.gofractional.com/*',
-            'https://wellfound.com/*'
+            'https://wellfound.com/*',
+            'https://*.indeed.com/*'
         ],
         currentWindow: true
     });
@@ -270,6 +369,7 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
         url.includes('linkedin.com') ? 'linkedin'
         : url.includes('gofractional.com') ? 'gofractional'
         : url.includes('wellfound.com') ? 'wellfound'
+        : url.includes('indeed.') ? 'indeed'
         : 'unknown';
 
     for (const tab of tabs) {       
@@ -277,7 +377,8 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
             const getJobDataFunction = {
                 linkedin: getJobDataFromLinkedin,
                 gofractional: getJobDataFromGoFractional,
-                wellfound: getJobDataFromWellfound
+                wellfound: getJobDataFromWellfound,
+                indeed: getJobDataFromIndeed
             };
 
             const platform = getPlatform(tab.url);
@@ -294,8 +395,8 @@ document.getElementById('captureBtn').addEventListener('click', async () => {
 
             const uniqueKey =
                 result.jobId
-                    ? `li:${result.jobId}`
-                    : `gf:${result.url}`;
+                    ? `${platform}:${result.jobId}`
+                    : `${platform}:${result.url}`;
 
             if (seen.has(uniqueKey)) continue;
             seen.add(uniqueKey);

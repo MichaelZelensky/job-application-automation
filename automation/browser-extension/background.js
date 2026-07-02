@@ -138,6 +138,66 @@ const getJobDataFromWellfound = () => {
     };
 };
 
+const getJobDataFromIndeed = () => {
+
+    const getText = selector =>
+        document.querySelector(selector)?.innerText?.trim() || '';
+
+    const jobTitle =
+        getText('[data-testid="jobsearch-JobInfoHeader-title"]')
+        || getText('.jobsearch-JobInfoHeader-title');
+
+    const companyAnchor =
+        document.querySelector('[data-company-name="true"] a');
+
+    const company =
+        companyAnchor?.innerText?.trim()
+        || '';
+
+    const companyUrl =
+        companyAnchor?.href
+        || '';
+
+    const jobDescription =
+        document.querySelector('#jobDescriptionText')
+            ?.innerText
+            ?.trim()
+        || '';
+
+    const benefits =
+        [...document.querySelectorAll('#benefits li')]
+            .map(li => li.innerText.trim())
+            .filter(Boolean);
+
+    const jobType =
+        getText('#salaryInfoAndJobType');
+
+    const jobLocation =
+        getText('[data-testid="jobsearch-JobInfoHeader-companyLocation"]')
+        || getText('#jobLocationText');
+
+    const params = new URLSearchParams(window.location.search);
+
+    const jobId =
+        params.get('jk')
+        || window.location.href.match(/[?&]jk=([^&]+)/)?.[1]
+        || '';
+
+    return {
+        jobId,
+        jobUrl: `${window.location.origin}${window.location.pathname}${jobId ? `?jk=${jobId}` : ''}`,
+        jobTitle,
+        company,
+        companyUrl,
+        jobDescription: [
+            jobLocation && `Location: ${jobLocation}`,
+            jobType && `Job type: ${jobType}`,
+            benefits.length && `Benefits:\n${benefits.join('\n')}`,
+            jobDescription
+        ].filter(Boolean).join('\n\n')
+    };
+};
+
 const copyViaOffscreen = async text => {
 
     const existing = await chrome.offscreen.hasDocument?.() ?? false;
@@ -170,7 +230,8 @@ const buildAndCopy = async (tab, overrides = {}) => {
     const getJobDataFunction = {
         'linkedin.com': getJobDataFromLinkedin,
         'gofractional.com': getJobDataFromGoFractional,
-        'wellfound.com': getJobDataFromWellfound
+        'wellfound.com': getJobDataFromWellfound,
+        'indeed.': getJobDataFromIndeed
     };
 
     const scraper = Object.entries(getJobDataFunction)
@@ -211,9 +272,10 @@ chrome.commands.onCommand.addListener(async command => {
         url: [
             'https://www.linkedin.com/*',
             'https://www.gofractional.com/*',
-            'https://wellfound.com/*'
+            'https://wellfound.com/*',
+            'https://*.indeed.com/*'
         ],
-        active:        true,
+        active: true,
         currentWindow: true
     });
     if (!tab) return;
@@ -230,9 +292,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         url: [
             'https://www.linkedin.com/*',
             'https://www.gofractional.com/*',
-            'https://wellfound.com/*'
+            'https://wellfound.com/*',
+            'https://*.indeed.com/*'
         ],
-        active:        true,
+        active: true,
         currentWindow: true
     }).then(([tab]) => {
 

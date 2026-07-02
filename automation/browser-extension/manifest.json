@@ -26,7 +26,9 @@
     "https://www.gofractional.com/*",
     "https://gofractional.com/*",
     "https://www.wellfound.com/*",
-    "https://wellfound.com/*"
+    "https://wellfound.com/*",
+    "https://*.indeed.com/*",
+    "https://indeed.com/*"
   ],
 
   "action": {

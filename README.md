@@ -6,9 +6,10 @@ End-to-end workflow for finding, qualifying, tailoring, validating, and applying
 
 Currently this project supports:
 
-* LinkedIn job listings
-* GoFractional job listings
-* WellFound job listings
+* LinkedIn.com
+* GoFractional.com
+* WellFound.com
+* Indeed.com
 
 The browser extension is designed to extract job information from the supported platform job pages. Other job boards have not been tested.
 
@@ -277,7 +278,7 @@ applications/2026-06-29/cvs/John Silver - Stripe.pdf
 
 ## Disclaimer
 
-This project is an independent tool and is not affiliated with, endorsed by, or sponsored by LinkedIn.
+This project is an independent tool and is not affiliated with, endorsed by, or sponsored by any of the supported platforms.
 
 The browser extension only reads information already present in loaded pages. It does not perform automated submissions or interactions with external services.
 
